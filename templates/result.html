@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Result — Application #{{ app.id }}{% endblock %}
+{% block topbar_title %}Submission Result{% endblock %}
+{% block topbar_actions %}
+  <a href="/" class="btn btn-outline">← Dashboard</a>
+  <a href="/apply" class="btn btn-primary">New Application</a>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:700px;margin:0 auto">
+  <!-- Big result card -->
+  <div class="card" style="margin-bottom:24px;text-align:center;padding:32px">
+    {% if app.status == 'Approved' %}
+      <div style="font-size:48px;margin-bottom:12px">✅</div>
+      <h2 style="color:var(--green);font-size:24px;margin-bottom:8px">Application Approved</h2>
+    {% elif app.status == 'Rejected' %}
+      <div style="font-size:48px;margin-bottom:12px">❌</div>
+      <h2 style="color:var(--red);font-size:24px;margin-bottom:8px">Application Rejected</h2>
+    {% elif app.status == 'Suspicious' %}
+      <div style="font-size:48px;margin-bottom:12px">⚠️</div>
+      <h2 style="color:var(--purple);font-size:24px;margin-bottom:8px">Flagged for Investigation</h2>
+    {% else %}
+      <div style="font-size:48px;margin-bottom:12px">🔍</div>
+      <h2 style="color:var(--amber);font-size:24px;margin-bottom:8px">Sent for Manual Review</h2>
+    {% endif %}
+    <p style="color:var(--gray-600);font-size:14px">Application ID: <strong class="font-mono">#{{ app.id }}</strong> · Submitted by {{ app.name }}</p>
+    <div style="margin-top:16px;display:inline-flex;align-items:center;gap:8px;background:var(--gray-100);padding:8px 16px;border-radius:20px">
+      <span style="font-size:13px;color:var(--gray-600)">ML Confidence:</span>
+      <strong style="font-size:15px;color:var(--gray-800)">{{ app.confidence }}%</strong>
+    </div>
+  </div>
+
+  <!-- Quick summary -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-header"><div class="card-title">Verification Summary</div></div>
+    <div class="card-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        {% for label, val in [('Name Match', match_scores.get('name_match', 0)), ('DOB Match', match_scores.get('dob_match', 0)), ('Income Match', match_scores.get('income_match', 0)), ('Bank Match', match_scores.get('bank_match', 0))] %}
+        <div style="background:var(--gray-50);border-radius:var(--radius);padding:12px;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:13px;color:var(--gray-600)">{{ label }}</span>
+          <strong style="color:{% if val >= 80 %}var(--green){% elif val >= 60 %}var(--amber){% else %}var(--red){% endif %}">{{ val }}%</strong>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% if flags %}
+      <div style="margin-top:4px">
+        {% for flag in flags %}
+        <div class="flag-item" style="margin-bottom:8px">⚠ {{ flag }}</div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="alert alert-success">✅ No document inconsistencies found.</div>
+      {% endif %}
+
+      <!-- Eligibility summary -->
+      <div style="margin-top:16px">
+        <div style="font-size:12px;font-weight:600;color:var(--gray-500);text-transform:uppercase;margin-bottom:8px">Eligibility Criteria</div>
+        {% for key, val in eligibility.items() %}
+          {% if key != 'overall' and val is mapping %}
+          <div style="display:flex;align-items:center;gap:8px;font-size:13px;padding:5px 0">
+            <span style="color:{% if val.get('pass') %}var(--green){% else %}var(--red){% endif %}">
+              {% if val.get('pass') %}✓{% else %}✕{% endif %}
+            </span>
+            <span style="color:var(--gray-700)">{{ val.get('message', key) }}</span>
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="flex gap-3" style="justify-content:center">
+    <a href="/application/{{ app.id }}" class="btn btn-primary">View Full Details</a>
+    <a href="/" class="btn btn-outline">Back to Dashboard</a>
+  </div>
+</div>
+{% endblock %}
