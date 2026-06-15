@@ -76,3 +76,79 @@ def check_eligibility(data: dict) -> dict:
     results['overall'] = overall
 
     return results
+
+
+def _grade_for_score(score: float) -> str:
+    if score >= 90:
+        return 'Excellent'
+    if score >= 75:
+        return 'Good'
+    if score >= 60:
+        return 'Average'
+    return 'Weak'
+
+
+def calculate_eligibility_score(student_data: dict) -> dict:
+    """
+    Compute an overall eligibility score out of 100 for a student,
+    based on weighted sub-scores:
+
+        Marks               = 30%
+        Income              = 25%
+        Document Match      = 25%
+        Category Eligibility = 10%
+        Course Eligibility   = 10%
+
+    student_data keys used:
+        marks, income, category, course
+        match_scores (optional dict with 'overall' document match %)
+
+    Returns:
+        {"score": <int 0-100>, "grade": "Excellent"|"Good"|"Average"|"Weak"}
+    """
+    category = student_data.get('category', 'General')
+    income = float(student_data.get('income', 0))
+    marks = float(student_data.get('marks', 0))
+    course = student_data.get('course', '')
+
+    rules = SCHOLARSHIP_RULES.get(category, SCHOLARSHIP_RULES['General'])
+
+    # --- Marks sub-score (30%) ---
+    # Scale marks (0-100) directly as a percentage of the marks weight
+    marks_subscore = max(0.0, min(100.0, marks))
+
+    # --- Income sub-score (25%) ---
+    # Full marks if within limit; degrade proportionally if over the limit
+    if income <= rules['income_limit']:
+        # Reward lower income relative to the limit (more headroom = higher score)
+        headroom_ratio = 1 - (income / rules['income_limit']) if rules['income_limit'] else 0
+        income_subscore = 70 + 30 * max(0, min(1, headroom_ratio))  # 70-100 range
+    else:
+        over_ratio = (income - rules['income_limit']) / rules['income_limit']
+        income_subscore = max(0, 60 - over_ratio * 60)  # degrade below 60
+
+    # --- Document match sub-score (25%) ---
+    match_scores = student_data.get('match_scores', {}) or {}
+    doc_match_subscore = float(match_scores.get('overall', 80))
+
+    # --- Category eligibility sub-score (10%) ---
+    category_subscore = 100.0 if category in SCHOLARSHIP_RULES else 40.0
+
+    # --- Course eligibility sub-score (10%) ---
+    course_ok = any(c.lower() in course.lower() for c in ELIGIBLE_COURSES) or len(course) > 2
+    course_subscore = 100.0 if course_ok else 30.0
+
+    total = (
+        marks_subscore * 0.30 +
+        income_subscore * 0.25 +
+        doc_match_subscore * 0.25 +
+        category_subscore * 0.10 +
+        course_subscore * 0.10
+    )
+
+    score = round(max(0, min(100, total)))
+
+    return {
+        "score": score,
+        "grade": _grade_for_score(score)
+    }

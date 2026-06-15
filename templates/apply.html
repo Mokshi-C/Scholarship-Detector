@@ -1,206 +1,111 @@
 {% extends "base.html" %}
 {% block title %}New Application{% endblock %}
-{% block topbar_title %}New Scholarship Application{% endblock %}
-{% block topbar_actions %}
-  <a href="/" class="btn btn-outline">← Back to Dashboard</a>
-{% endblock %}
 
 {% block content %}
-<div style="max-width:800px">
-  <div class="alert alert-info" style="margin-bottom:20px">
-    <span>ℹ</span>
-    <div>Upload documents and submit — our OCR engine will extract data and ML model will verify + classify your application automatically.</div>
-  </div>
+<div class="page-header">
+  <h1>New Scholarship Application</h1>
+  <p>Fill in student details and upload supporting documents for OCR-based verification.</p>
+</div>
 
-  <form method="POST" enctype="multipart/form-data">
-    <!-- Personal Information -->
-    <div class="card" style="margin-bottom:20px">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Personal Information</div>
-          <div class="card-subtitle">Must match Aadhaar card exactly</div>
-        </div>
+<div class="form-card">
+  <form method="POST" action="{{ url_for('apply') }}" enctype="multipart/form-data">
+
+    <div class="form-section-title">Student Details</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" name="name" required placeholder="e.g. Priya Shankar">
       </div>
-      <div class="card-body">
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="name">Full Name <span style="color:var(--red)">*</span></label>
-            <input type="text" id="name" name="name" placeholder="As on Aadhaar" required>
-          </div>
-          <div class="form-group">
-            <label for="dob">Date of Birth <span style="color:var(--red)">*</span></label>
-            <input type="date" id="dob" name="dob" required>
-          </div>
-          <div class="form-group">
-            <label for="aadhaar">Aadhaar Number <span style="color:var(--red)">*</span></label>
-            <input type="text" id="aadhaar" name="aadhaar" placeholder="XXXX-XXXX-XXXX" maxlength="14" required>
-            <span class="form-hint">12-digit Aadhaar number</span>
-          </div>
-          <div class="form-group">
-            <label for="category">Category <span style="color:var(--red)">*</span></label>
-            <select id="category" name="category" required>
-              <option value="">Select category</option>
-              <option value="SC">SC (Scheduled Caste)</option>
-              <option value="ST">ST (Scheduled Tribe)</option>
-              <option value="OBC">OBC (Other Backward Classes)</option>
-              <option value="EWS">EWS (Economically Weaker Section)</option>
-              <option value="General">General</option>
-            </select>
-          </div>
-        </div>
+      <div class="form-group">
+        <label for="dob">Date of Birth</label>
+        <input type="date" id="dob" name="dob" required>
+      </div>
+      <div class="form-group">
+        <label for="aadhaar">Aadhaar Number</label>
+        <input type="text" id="aadhaar" name="aadhaar" required placeholder="XXXX-XXXX-XXXX">
+      </div>
+      <div class="form-group">
+        <label for="gender">Gender</label>
+        <select id="gender" name="gender" required>
+          <option value="">Select</option>
+          <option value="Female">Female</option>
+          <option value="Male">Male</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="category">Category</label>
+        <select id="category" name="category" required>
+          <option value="">Select</option>
+          <option value="General">General</option>
+          <option value="SC">SC</option>
+          <option value="ST">ST</option>
+          <option value="OBC">OBC</option>
+          <option value="EWS">EWS</option>
+        </select>
       </div>
     </div>
 
-    <!-- Academic Details -->
-    <div class="card" style="margin-bottom:20px">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Academic Details</div>
-          <div class="card-subtitle">Current enrollment information</div>
-        </div>
+    <div class="form-section-title">Academic &amp; Financial Details</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="income">Annual Family Income (₹)</label>
+        <input type="number" step="1" min="0" id="income" name="income" required placeholder="e.g. 180000">
       </div>
-      <div class="card-body">
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="course">Course / Program <span style="color:var(--red)">*</span></label>
-            <input type="text" id="course" name="course" placeholder="e.g. B.Tech Computer Science" required>
-          </div>
-          <div class="form-group">
-            <label for="year">Year of Study <span style="color:var(--red)">*</span></label>
-            <select id="year" name="year" required>
-              <option value="">Select year</option>
-              <option value="1">1st Year</option>
-              <option value="2">2nd Year</option>
-              <option value="3">3rd Year</option>
-              <option value="4">4th Year</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="marks">Last Exam Percentage (%) <span style="color:var(--red)">*</span></label>
-            <input type="number" id="marks" name="marks" min="0" max="100" step="0.1" placeholder="e.g. 85.5" required>
-          </div>
-          <div class="form-group">
-            <label for="income">Annual Family Income (₹) <span style="color:var(--red)">*</span></label>
-            <input type="number" id="income" name="income" min="0" placeholder="e.g. 180000" required>
-            <span class="form-hint">As on income certificate</span>
-          </div>
-        </div>
+      <div class="form-group">
+        <label for="marks">Marks (%)</label>
+        <input type="number" step="0.1" min="0" max="100" id="marks" name="marks" required placeholder="e.g. 87.5">
+      </div>
+      <div class="form-group">
+        <label for="course">Course</label>
+        <input type="text" id="course" name="course" required placeholder="e.g. B.Tech Computer Science">
+      </div>
+      <div class="form-group">
+        <label for="year">Year of Study</label>
+        <select id="year" name="year" required>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+        </select>
       </div>
     </div>
 
-    <!-- Bank Details -->
-    <div class="card" style="margin-bottom:20px">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Bank Details</div>
-          <div class="card-subtitle">For scholarship disbursement</div>
-        </div>
+    <div class="form-section-title">Bank Details</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="bank_account">Bank Account Number</label>
+        <input type="text" id="bank_account" name="bank_account" required placeholder="e.g. 31245678901">
       </div>
-      <div class="card-body">
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="bank_account">Account Number <span style="color:var(--red)">*</span></label>
-            <input type="text" id="bank_account" name="bank_account" placeholder="Savings account number" required class="font-mono">
-          </div>
-          <div class="form-group">
-            <label for="bank_name">Bank Name <span style="color:var(--red)">*</span></label>
-            <input type="text" id="bank_name" name="bank_name" placeholder="e.g. State Bank of India" required>
-          </div>
-        </div>
+      <div class="form-group">
+        <label for="bank_name">Bank Name</label>
+        <input type="text" id="bank_name" name="bank_name" required placeholder="e.g. State Bank of India">
       </div>
     </div>
 
-    <!-- Document Upload -->
-    <div class="card" style="margin-bottom:24px">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Document Upload</div>
-          <div class="card-subtitle">OCR will extract and verify data automatically</div>
-        </div>
-        <span class="badge" style="background:var(--blue-mid);color:var(--blue-text);margin-left:auto">Optional for Demo</span>
+    <div class="form-section-title">Supporting Documents (Optional — OCR will simulate if not provided)</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="aadhaar_doc">Aadhaar Card</label>
+        <input type="file" id="aadhaar_doc" name="aadhaar" accept="image/*">
       </div>
-      <div class="card-body">
-        <div class="form-grid">
-          <div class="form-group">
-            <label>Aadhaar Card</label>
-            <label class="upload-zone" for="file_aadhaar">
-              <input type="file" id="file_aadhaar" name="aadhaar" accept="image/*,.pdf">
-              <div class="upload-icon">🪪</div>
-              <div class="upload-label" id="label_aadhaar">Click to upload Aadhaar</div>
-              <div class="upload-hint">JPG, PNG, PDF</div>
-            </label>
-          </div>
-          <div class="form-group">
-            <label>Marksheet</label>
-            <label class="upload-zone" for="file_marksheet">
-              <input type="file" id="file_marksheet" name="marksheet" accept="image/*,.pdf">
-              <div class="upload-icon">📋</div>
-              <div class="upload-label" id="label_marksheet">Click to upload Marksheet</div>
-              <div class="upload-hint">JPG, PNG, PDF</div>
-            </label>
-          </div>
-          <div class="form-group">
-            <label>Income Certificate</label>
-            <label class="upload-zone" for="file_income">
-              <input type="file" id="file_income" name="income_certificate" accept="image/*,.pdf">
-              <div class="upload-icon">📄</div>
-              <div class="upload-label" id="label_income">Click to upload Certificate</div>
-              <div class="upload-hint">JPG, PNG, PDF</div>
-            </label>
-          </div>
-          <div class="form-group">
-            <label>Bank Passbook</label>
-            <label class="upload-zone" for="file_bank">
-              <input type="file" id="file_bank" name="bank_passbook" accept="image/*,.pdf">
-              <div class="upload-icon">🏦</div>
-              <div class="upload-label" id="label_bank">Click to upload Passbook</div>
-              <div class="upload-hint">JPG, PNG, PDF</div>
-            </label>
-          </div>
-        </div>
-        <div class="alert alert-warning mt-4" style="margin-top:16px">
-          <span>⚠</span>
-          <div>For SIH demo: uploading is optional. The system will simulate OCR extraction and generate realistic match scores.</div>
-        </div>
+      <div class="form-group">
+        <label for="marksheet">Marksheet</label>
+        <input type="file" id="marksheet" name="marksheet" accept="image/*">
+      </div>
+      <div class="form-group">
+        <label for="income_certificate">Income Certificate</label>
+        <input type="file" id="income_certificate" name="income_certificate" accept="image/*">
+      </div>
+      <div class="form-group">
+        <label for="bank_passbook">Bank Passbook</label>
+        <input type="file" id="bank_passbook" name="bank_passbook" accept="image/*">
       </div>
     </div>
 
-    <div class="flex gap-3">
-      <button type="submit" class="btn btn-primary" id="submit-btn" style="padding:10px 28px;font-size:14px">
-        Submit &amp; Verify Application
-      </button>
-      <a href="/" class="btn btn-outline" style="padding:10px 20px">Cancel</a>
+    <div style="margin-top: 22px;">
+      <button type="submit" class="btn">Submit Application</button>
     </div>
   </form>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-// File upload label updates
-['aadhaar', 'marksheet', 'income', 'bank'].forEach(type => {
-  const fileMap = { aadhaar: 'file_aadhaar', marksheet: 'file_marksheet', income: 'file_income', bank: 'file_bank' };
-  const labelMap = { aadhaar: 'label_aadhaar', marksheet: 'label_marksheet', income: 'label_income', bank: 'label_bank' };
-  document.getElementById(fileMap[type]).addEventListener('change', function() {
-    if (this.files[0]) {
-      document.getElementById(labelMap[type]).textContent = '✓ ' + this.files[0].name;
-    }
-  });
-});
-
-// Loading state on submit
-document.querySelector('form').addEventListener('submit', () => {
-  const btn = document.getElementById('submit-btn');
-  btn.textContent = '⏳ Processing OCR + ML Verification...';
-  btn.disabled = true;
-});
-
-// Aadhaar format helper
-document.getElementById('aadhaar').addEventListener('input', function() {
-  let v = this.value.replace(/[^0-9]/g, '');
-  if (v.length > 4 && v.length <= 8) v = v.slice(0,4) + '-' + v.slice(4);
-  else if (v.length > 8) v = v.slice(0,4) + '-' + v.slice(4,8) + '-' + v.slice(8,12);
-  this.value = v;
-});
-</script>
 {% endblock %}

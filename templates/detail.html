@@ -1,272 +1,220 @@
 {% extends "base.html" %}
 {% block title %}Application #{{ app.id }}{% endblock %}
-{% block topbar_title %}Application Review — {{ app.name }}{% endblock %}
-{% block topbar_actions %}
-  <a href="/" class="btn btn-outline">← Back</a>
-  <div class="flex gap-2">
-    <button onclick="updateStatus('Approved')" class="btn btn-sm" style="background:var(--green);color:white">✓ Approve</button>
-    <button onclick="updateStatus('Rejected')" class="btn btn-sm" style="background:var(--red);color:white">✕ Reject</button>
-    <button onclick="updateStatus('Needs Review')" class="btn btn-sm" style="background:var(--amber);color:white">◷ Send for Review</button>
-  </div>
-{% endblock %}
-
-{% block extra_styles %}
-<style>
-.doc-card { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; }
-.doc-type { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-500); }
-.doc-text { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--gray-700); line-height: 1.7; margin-top: 6px; white-space: pre-wrap; max-height: 120px; overflow-y: auto; }
-</style>
-{% endblock %}
 
 {% block content %}
-<!-- Status banner -->
-<div class="alert
-  {% if app.status == 'Approved' %}alert-success
-  {% elif app.status == 'Rejected' %}alert-danger
-  {% elif app.status == 'Suspicious' %}alert-warning
-  {% else %}alert-info{% endif %}"
-  style="margin-bottom:24px">
-  <span>
-    {% if app.status == 'Approved' %}✅
-    {% elif app.status == 'Rejected' %}❌
-    {% elif app.status == 'Suspicious' %}⚠️
-    {% else %}🔍{% endif %}
-  </span>
-  <div>
-    <strong>Status: {{ app.status }}</strong> —
-    ML confidence score: <strong>{{ app.confidence }}%</strong>
-    {% if app.duplicate_flag %} · <strong style="color:var(--purple)">⚠ Possible Duplicate Detected</strong>{% endif %}
+{% set status_class = {
+  'Approved': 'badge-approved',
+  'Rejected': 'badge-rejected',
+  'Needs Review': 'badge-review',
+  'Suspicious': 'badge-suspicious'
+} %}
+
+<div class="page-header">
+  <h1>Application #{{ app.id }} — {{ app.name }}</h1>
+  <p>
+    <span class="badge {{ status_class.get(app.status, '') }}">{{ app.status }}</span>
+    &nbsp;Confidence: <strong>{{ app.confidence }}%</strong>
+    &nbsp;·&nbsp; Eligibility Score: <strong>{{ app.eligibility_score }}/100</strong>
+    {% if app.duplicate_flag %}
+      &nbsp;·&nbsp; <span class="badge badge-suspicious">⚠ Duplicate Flag</span>
+    {% endif %}
+  </p>
+</div>
+
+<!-- Student / Application Info -->
+<div class="card" style="margin-bottom: 22px;">
+  <h3>Application Details</h3>
+  <div class="info-grid">
+    <div><span>Name</span><strong>{{ app.name }}</strong></div>
+    <div><span>Date of Birth</span><strong>{{ app.dob }}</strong></div>
+    <div><span>Aadhaar</span><strong>{{ app.aadhaar }}</strong></div>
+    <div><span>Gender</span><strong>{{ app.gender }}</strong></div>
+    <div><span>Category</span><strong>{{ app.category }}</strong></div>
+    <div><span>Income</span><strong>₹{{ "{:,.0f}".format(app.income) }}</strong></div>
+    <div><span>Marks</span><strong>{{ app.marks }}%</strong></div>
+    <div><span>Course</span><strong>{{ app.course }}</strong></div>
+    <div><span>Year</span><strong>{{ app.year }}</strong></div>
+    <div><span>Bank</span><strong>{{ app.bank_name }}</strong></div>
+    <div><span>Account No.</span><strong>{{ app.bank_account }}</strong></div>
+    <div><span>Submitted</span><strong>{{ app.created_at }}</strong></div>
+  </div>
+  {% if app.duplicate_flag and app.duplicate_reason %}
+    <p style="margin-top:12px; color: var(--suspicious); font-weight:600;">
+      ⚠ {{ app.duplicate_reason }}
+    </p>
+  {% endif %}
+</div>
+
+<div class="grid-2">
+  <!-- Eligibility Breakdown -->
+  <div class="card">
+    <h3>📋 Eligibility Breakdown</h3>
+    <table>
+      <thead><tr><th>Criterion</th><th>Status</th><th>Details</th></tr></thead>
+      <tbody>
+        {% for key in ['income', 'marks', 'course', 'year', 'category'] %}
+          {% set crit = eligibility.get(key) %}
+          {% if crit %}
+          <tr>
+            <td>{{ key|capitalize }}</td>
+            <td>
+              {% if crit.get('pass') %}
+                <span class="badge badge-pass">Pass</span>
+              {% else %}
+                <span class="badge badge-fail">Fail</span>
+              {% endif %}
+            </td>
+            <td class="muted">{{ crit.get('message', '') }}</td>
+          </tr>
+          {% endif %}
+        {% endfor %}
+        <tr>
+          <td><strong>Overall</strong></td>
+          <td>
+            {% if eligibility.get('overall') %}
+              <span class="badge badge-pass">Eligible</span>
+            {% else %}
+              <span class="badge badge-fail">Not Eligible</span>
+            {% endif %}
+          </td>
+          <td class="muted">Combined result of all criteria above</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Document Match Scores -->
+  <div class="card">
+    <h3>🔍 Document Match Scores</h3>
+    {% for label, key in [('Name', 'name_match'), ('Date of Birth', 'dob_match'), ('Income', 'income_match'), ('Bank Account', 'bank_match'), ('Overall', 'overall')] %}
+      {% set val = match_scores.get(key) %}
+      {% if val is not none %}
+      <div style="margin-bottom: 10px;">
+        <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:4px;">
+          <span>{{ label }}</span><strong>{{ val }}%</strong>
+        </div>
+        <div class="progress" style="width:100%;">
+          <div class="progress-fill" style="width: {{ val }}%; background: {{ 'var(--approved)' if val >= 75 else ('var(--review)' if val >= 50 else 'var(--rejected)') }};"></div>
+        </div>
+      </div>
+      {% endif %}
+    {% endfor %}
+
+    {% if flags %}
+      <div class="form-section-title" style="margin-top:18px;">Flags Raised</div>
+      <ul class="reason-list">
+        {% for flag in flags %}
+          <li>{{ flag }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
   </div>
 </div>
 
-<div class="two-col">
-  <!-- LEFT COLUMN -->
-  <div>
-    <!-- Applicant Info -->
-    <div class="card" style="margin-bottom:20px">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Applicant Details</div>
-        </div>
-      </div>
-      <div class="card-body" style="padding-top:12px">
-        <table style="width:100%;font-size:13px">
-          <tr><td style="color:var(--gray-500);padding:6px 0;width:40%">Full Name</td><td style="font-weight:500">{{ app.name }}</td></tr>
-          <tr><td style="color:var(--gray-500);padding:6px 0">Date of Birth</td><td class="font-mono">{{ app.dob }}</td></tr>
-          <tr><td style="color:var(--gray-500);padding:6px 0">Aadhaar</td><td class="font-mono">{{ app.aadhaar }}</td></tr>
-          <tr><td style="color:var(--gray-500);padding:6px 0">Category</td>
-            <td><span class="badge" style="background:var(--blue-mid);color:var(--blue-text)">{{ app.category }}</span></td></tr>
-          <tr><td style="color:var(--gray-500);padding:6px 0">Course</td><td>{{ app.course }} (Year {{ app.year }})</td></tr>
-          <tr><td style="color:var(--gray-500);padding:6px 0">Marks</td>
-            <td><strong style="color:{% if app.marks >= 75 %}var(--green){% elif app.marks >= 50 %}var(--amber){% else %}var(--red){% endif %}">{{ app.marks }}%</strong></td></tr>
-          <tr><td style="color:var(--gray-500);padding:6px 0">Income</td><td class="font-mono">₹{{ "{:,.0f}".format(app.income) }} / year</td></tr>
-          <tr><td style="color:var(--gray-500);padding:6px 0">Bank Account</td><td class="font-mono">{{ app.bank_account }}</td></tr>
-          <tr><td style="color:var(--gray-500);padding:6px 0">Bank</td><td>{{ app.bank_name }}</td></tr>
-          <tr><td style="color:var(--gray-500);padding:6px 0">Submitted</td><td class="text-sm text-gray">{{ app.created_at }}</td></tr>
-        </table>
-      </div>
-    </div>
-
-    <!-- Eligibility Check -->
-    <div class="card" style="margin-bottom:20px">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Eligibility Checker</div>
-          <div class="card-subtitle">Rule-based verification</div>
-        </div>
-        {% if eligibility.get('overall') %}
-          <span class="badge badge-approved" style="margin-left:auto">Eligible</span>
-        {% else %}
-          <span class="badge badge-rejected" style="margin-left:auto">Ineligible</span>
-        {% endif %}
-      </div>
-      <div class="card-body" style="padding-top:8px">
-        {% for key, val in eligibility.items() %}
-          {% if key != 'overall' and val is mapping %}
-          <div class="elig-item">
-            <div class="elig-icon {% if val.get('pass') %}pass{% else %}fail{% endif %}">
-              {% if val.get('pass') %}✓{% else %}✕{% endif %}
-            </div>
-            <div style="flex:1">
-              <div class="elig-label">{{ key | title }}</div>
-              <div class="elig-detail">{{ val.get('message', '') }}</div>
-            </div>
-          </div>
+<!-- Recommended Scholarships -->
+<div class="table-card" style="margin-bottom: 22px;">
+  <div class="table-card-header">
+    <h3>🎯 Recommended Scholarships</h3>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Rank</th>
+        <th>Scholarship</th>
+        <th>Provider</th>
+        <th>Match Score</th>
+        <th>Eligibility Status</th>
+        <th>Reason</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for rec in recommendations %}
+      <tr>
+        <td>#{{ loop.index }}</td>
+        <td><strong>{{ rec.name }}</strong></td>
+        <td class="muted">{{ rec.provider }}</td>
+        <td>{{ rec.match_score }}%</td>
+        <td>
+          {% if rec.eligible %}
+            <span class="badge badge-pass">Eligible</span>
+          {% else %}
+            <span class="badge badge-fail">Not Eligible</span>
           {% endif %}
-        {% endfor %}
-      </div>
-    </div>
+        </td>
+        <td class="muted">{{ rec.reason }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 
-    <!-- Documents & OCR -->
-    {% if app.documents %}
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <div class="card-title">OCR Extracted Text</div>
-          <div class="card-subtitle">{{ app.documents|length }} document(s) processed</div>
-        </div>
-      </div>
-      <div class="card-body">
-        {% for doc in app.documents %}
-        <div class="doc-card">
-          <div class="doc-type">{{ doc.doc_type | replace('_', ' ') | upper }}</div>
-          <div class="doc-text">{{ doc.extracted_text or 'No text extracted' }}</div>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
+<div class="grid-2">
+  <!-- AI Explanation -->
+  <div class="card">
+    <h3>🤖 AI Explanation</h3>
+    <p class="explanation-summary">{{ explanation.get('summary', '') }}</p>
+    {% set reasons = explanation.get('reasons', []) %}
+    {% if reasons %}
+    <ul class="reason-list">
+      {% for reason in reasons %}
+        <li>{{ reason }}</li>
+      {% endfor %}
+    </ul>
     {% else %}
-    <div class="card">
-      <div class="card-header"><div class="card-title">OCR Extracted Text</div></div>
-      <div class="card-body">
-        <div class="text-sm text-gray" style="text-align:center;padding:20px">
-          No documents uploaded — system used simulated OCR data for verification.
-        </div>
-      </div>
-    </div>
+      <p class="muted">No additional details available.</p>
     {% endif %}
   </div>
 
-  <!-- RIGHT COLUMN -->
-  <div>
-    <!-- ML Confidence Scores -->
-    <div class="card" style="margin-bottom:20px">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Document Match Scores</div>
-          <div class="card-subtitle">OCR data vs submitted form (fuzzy + cosine)</div>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="score-grid">
-          {% set scores = [
-            ('Name Match', match_scores.get('name_match', 0)),
-            ('DOB Match', match_scores.get('dob_match', 0)),
-            ('Income Match', match_scores.get('income_match', 0)),
-            ('Bank Match', match_scores.get('bank_match', 0))
-          ] %}
-          {% for label, val in scores %}
-          <div class="score-item">
-            <div class="score-name">{{ label }}</div>
-            <div class="score-value" style="color:{% if val >= 80 %}var(--green){% elif val >= 60 %}var(--amber){% else %}var(--red){% endif %}">
-              {{ val }}%
-            </div>
-            <div class="score-bar-track">
-              <div class="score-bar-fill" style="width:{{ val }}%;background:{% if val >= 80 %}var(--green){% elif val >= 60 %}var(--amber){% else %}var(--red){% endif %}"></div>
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-
-        <div style="margin-top:16px;padding:14px;background:var(--gray-50);border-radius:var(--radius)">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-            <span style="font-size:12px;font-weight:600;color:var(--gray-600)">Overall Match Score</span>
-            <span style="font-size:20px;font-weight:700;color:{% if match_scores.get('overall', 0) >= 80 %}var(--green){% elif match_scores.get('overall', 0) >= 60 %}var(--amber){% else %}var(--red){% endif %}">
-              {{ match_scores.get('overall', 0) }}%
-            </span>
-          </div>
-          <div class="score-bar-track" style="height:8px">
-            <div class="score-bar-fill" style="width:{{ match_scores.get('overall', 0) }}%;height:100%;background:{% if match_scores.get('overall', 0) >= 80 %}var(--green){% elif match_scores.get('overall', 0) >= 60 %}var(--amber){% else %}var(--red){% endif %}"></div>
-          </div>
-        </div>
-      </div>
+  <!-- Status Update + Documents -->
+  <div class="card">
+    <h3>⚙️ Manual Review</h3>
+    <div class="status-update">
+      <select id="statusSelect">
+        <option value="Approved" {{ 'selected' if app.status == 'Approved' else '' }}>Approved</option>
+        <option value="Rejected" {{ 'selected' if app.status == 'Rejected' else '' }}>Rejected</option>
+        <option value="Needs Review" {{ 'selected' if app.status == 'Needs Review' else '' }}>Needs Review</option>
+        <option value="Suspicious" {{ 'selected' if app.status == 'Suspicious' else '' }}>Suspicious</option>
+      </select>
+      <button class="btn" onclick="updateStatus({{ app.id }})">Save Status</button>
     </div>
 
-    <!-- ML Score -->
-    <div class="card" style="margin-bottom:20px">
-      <div class="card-header">
-        <div>
-          <div class="card-title">ML Classification Result</div>
-          <div class="card-subtitle">Random Forest classifier output</div>
-        </div>
-      </div>
-      <div class="card-body">
-        <div style="text-align:center;padding:16px 0">
-          <div style="font-size:11px;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Classification</div>
-          <div style="font-size:32px;font-weight:700;
-            color:{% if app.status == 'Approved' %}var(--green){% elif app.status == 'Rejected' %}var(--red){% elif app.status == 'Suspicious' %}var(--purple){% else %}var(--amber){% endif %}">
-            {{ app.status }}
-          </div>
-          <div style="font-size:13px;color:var(--gray-500);margin-top:4px">
-            Confidence: <strong>{{ app.confidence }}%</strong>
-          </div>
-        </div>
-        <div style="margin-top:8px;padding:12px;background:var(--gray-50);border-radius:var(--radius);font-size:12px;color:var(--gray-600)">
-          Features: income eligibility, marks threshold, category rules, document match scores, duplicate flag
-        </div>
-      </div>
-    </div>
-
-    <!-- Flags -->
-    <div class="card" style="margin-bottom:20px">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Verification Flags</div>
-          <div class="card-subtitle">{{ flags|length }} issue(s) detected</div>
-        </div>
-      </div>
-      <div class="card-body">
-        {% if flags %}
-          {% for flag in flags %}
-          <div class="flag-item {% if 'duplicate' in flag.lower() or 'mismatch' in flag.lower() %}critical{% endif %}">
-            <span>{% if 'duplicate' in flag.lower() %}🔴{% else %}⚠{% endif %}</span>
-            <span>{{ flag }}</span>
-          </div>
-          {% endfor %}
-        {% else %}
-          <div class="alert alert-success">
-            <span>✅</span> No verification issues detected. All documents appear consistent.
-          </div>
-        {% endif %}
-
-        {% if app.duplicate_flag and app.duplicate_reason %}
-        <div class="flag-item critical" style="margin-top:8px">
-          <span>🔴</span>
-          <div>
-            <strong>Duplicate Detection:</strong><br>{{ app.duplicate_reason }}
-          </div>
-        </div>
-        {% endif %}
-      </div>
-    </div>
-
-    <!-- Manual Override -->
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Manual Override</div>
-          <div class="card-subtitle">Override ML decision</div>
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="flex gap-2" style="flex-wrap:wrap">
-          <button onclick="updateStatus('Approved')" class="btn" style="background:var(--green-light);color:var(--green-text);border:1px solid var(--green-mid)">✓ Approve</button>
-          <button onclick="updateStatus('Rejected')" class="btn" style="background:var(--red-light);color:var(--red-text);border:1px solid var(--red-mid)">✕ Reject</button>
-          <button onclick="updateStatus('Needs Review')" class="btn" style="background:var(--amber-light);color:var(--amber-text);border:1px solid var(--amber-mid)">◷ Flag for Review</button>
-          <button onclick="updateStatus('Suspicious')" class="btn" style="background:var(--purple-light);color:var(--purple-text);border:1px solid var(--purple-mid)">⚠ Mark Suspicious</button>
-        </div>
-        <div id="status-msg" style="margin-top:10px;font-size:13px;color:var(--green)"></div>
-      </div>
-    </div>
+    {% if app.documents %}
+      <div class="form-section-title" style="margin-top:20px;">Uploaded Documents</div>
+      {% for doc in app.documents %}
+        <details>
+          <summary>{{ doc.doc_type|replace('_', ' ')|capitalize }} — {{ doc.filepath.split('/')[-1] }}</summary>
+          <pre>{{ doc.extracted_text }}</pre>
+        </details>
+      {% endfor %}
+    {% else %}
+      <p class="muted" style="margin-top:16px;">No documents were uploaded for this application (OCR was simulated).</p>
+    {% endif %}
   </div>
+</div>
+
+<div style="margin-top: 18px;">
+  <a class="btn" style="background:#374151;" href="{{ url_for('dashboard') }}">← Back to Dashboard</a>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-function updateStatus(status) {
+function updateStatus(appId) {
+  const status = document.getElementById('statusSelect').value;
   fetch('/api/update_status', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ app_id: {{ app.id }}, status: status })
+    body: JSON.stringify({ app_id: appId, status: status })
   })
   .then(r => r.json())
-  .then(d => {
-    if (d.success) {
-      document.getElementById('status-msg').textContent = '✓ Status updated to: ' + status;
-      setTimeout(() => window.location.reload(), 1000);
+  .then(data => {
+    if (data.success) {
+      location.reload();
+    } else {
+      alert('Failed to update status.');
     }
-  });
+  })
+  .catch(() => alert('Network error while updating status.'));
 }
 </script>
 {% endblock %}
