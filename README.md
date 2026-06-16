@@ -1,126 +1,315 @@
-# 🎓 ScholarVerify — Smart Scholarship Verification System
-### SIH 2024 · ML + OCR Prototype
+# 🎓 EligibilityX
+
+> AI-Powered Scholarship Eligibility & Verification Platform
+
+EligibilityX is a smart scholarship management platform that automates eligibility verification, document validation, scholarship recommendation, and applicant analysis using OCR, rule-based intelligence, and Generative AI.
+
+The system helps educational institutions, government agencies, NGOs, and scholarship providers streamline the scholarship screening process while reducing manual effort and improving transparency.
+
+---
+![alt text](image-1.png)
+
+## ✨ Features
+
+### 🤖 AI Scholarship Recommendation Engine
+
+* Recommends scholarships based on:
+
+  * Academic performance
+  * Family income
+  * Category
+  * Course
+  * Gender
+* Calculates scholarship match scores
+
+### 📄 OCR-Based Document Verification
+
+* Extracts information from uploaded documents
+* Supports:
+
+  * Aadhaar Card
+  * Marksheet
+  * Income Certificate
+  * Bank Passbook
+* Compares extracted text with submitted application data
+
+### 🎯 Eligibility Scoring
+
+* Generates an eligibility score for every applicant
+* Evaluates:
+
+  * Income criteria
+  * Academic performance
+  * Category eligibility
+  * Document consistency
+
+### 🔍 Duplicate Application Detection
+
+* Detects duplicate applications using:
+
+  * Aadhaar Number
+  * Bank Account Details
+  * Applicant Information
+
+### 🧠 AI Explanation Engine
+
+* Explains:
+
+  * Approval decisions
+  * Rejection reasons
+  * Eligibility outcomes
+  * Recommendation logic
+
+### 💬 ScholarBot (Gemini AI Assistant)
+
+* Interactive AI-powered scholarship assistant
+* Answers scholarship-related questions
+* Provides eligibility guidance
+* Explains required documents and deadlines
+
+### 📊 Analytics Dashboard
+
+* Application statistics
+* Approval rates
+* Eligibility insights
+* Recommendation highlights
+* Scholarship analytics
 
 ---
 
-## 🚀 Quick Start
+## 🏗️ System Workflow
+
+```text
+Applicant
+   │
+   ▼
+Application Form
+   │
+   ▼
+OCR Verification
+   │
+   ▼
+Eligibility Engine
+   │
+   ▼
+Recommendation Engine
+   │
+   ▼
+AI Explanation Engine
+   │
+   ▼
+ScholarBot + Dashboard
+```
+
+---
+
+## 🛠️ Technology Stack
+
+### Frontend
+
+* HTML5
+* CSS3
+* JavaScript
+* Jinja2 Templates
+* Chart.js
+* Lucide Icons
+
+### Backend
+
+* Python
+* Flask
+* Flask-SQLAlchemy
+
+### Database
+
+* SQLite
+
+### AI & NLP
+
+* Google Gemini API
+
+### OCR
+
+* Tesseract OCR
+
+### Utilities
+
+* dotenv
+* JSON Processing
+
+---
+
+## 📂 Project Structure
+
+```text
+EligibilityX/
+│
+├── app.py
+├── migrate_db.py
+├── requirements.txt
+├── .env
+│
+├── models/
+│   ├── __init__.py
+│   └── database.py
+│
+├── templates/
+│   ├── base.html
+│   ├── dashboard.html
+│   ├── apply.html
+│   ├── detail.html
+│   └── result.html
+│
+├── uploads/
+│
+├── utils/
+│   ├── classifier.py
+│   ├── deadlines.py
+│   ├── eligibility.py
+│   ├── explainer.py
+│   ├── matcher.py
+│   ├── ocr_engine.py
+│   ├── scholarship_recommender.py
+│   ├── scholarbot.py
+│   └── seed.py
+│
+├── instance/
+│   └── scholarship.db
+│
+└── static/
+    ├── css/
+    ├── js/
+    └── images/
+```
+
+---
+
+## ⚙️ Installation
+
+### 1. Clone the Repository
 
 ```bash
-# 1. Clone / extract project
-cd scholarship_system
+git clone https://github.com/Mokshi-C/Scholarship-Detector.git
+cd Scholarship-Detector
+```
 
-# 2. Create virtual environment
+### 2. Create Virtual Environment
+
+```bash
 python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
+```
 
-# 3. Install dependencies
+### Activate Virtual Environment
+
+#### Windows
+
+```bash
+venv\Scripts\activate
+```
+
+#### Linux / macOS
+
+```bash
+source venv/bin/activate
+```
+
+### 3. Install Dependencies
+
+```bash
 pip install -r requirements.txt
+```
 
-# 4. Install Tesseract OCR (for real OCR)
-# Ubuntu/Debian:  sudo apt-get install tesseract-ocr
-# macOS:          brew install tesseract
-# Windows:        https://github.com/UB-Mannheim/tesseract/wiki
+### 4. Configure Environment Variables
 
-# 5. Run the app
+Create a `.env` file in the root directory:
+
+```env
+GEMINI_API_KEY=YOUR_GEMINI_API_KEY
+```
+
+### 5. Run the Application
+
+```bash
 python app.py
-# Open: http://localhost:5000
+```
+
+Open:
+
+```text
+http://127.0.0.1:5000
 ```
 
 ---
 
-## 🏗️ Project Structure
+## 💬 ScholarBot
 
-```
-scholarship_system/
-├── app.py                  # Flask app + routes
-├── requirements.txt
-├── models/
-│   └── database.py         # SQLAlchemy models (Application, Document)
-├── utils/
-│   ├── ocr_engine.py       # Tesseract OCR + preprocessing
-│   ├── matcher.py          # Fuzzy name/DOB/income matching (rapidfuzz)
-│   ├── eligibility.py      # Rule-based eligibility checker
-│   ├── classifier.py       # ML Random Forest classifier
-│   └── seed.py             # Demo data seeder
-├── templates/
-│   ├── base.html           # Sidebar layout + nav
-│   ├── dashboard.html      # Main overview + table
-│   ├── apply.html          # Application form + upload
-│   ├── detail.html         # Full review page
-│   └── result.html         # Post-submission result
-└── uploads/                # Saved document files
-```
+ScholarBot is an AI-powered scholarship assistant integrated into EligibilityX.
+
+### Example Queries
+
+* What scholarships am I eligible for?
+* What documents are required?
+* Tell me about AICTE Pragati Scholarship.
+* Explain my eligibility score.
+* What scholarships are available for OBC students?
+
+Powered by Google Gemini.
 
 ---
 
-## 🤖 ML Features
+## 📈 Future Enhancements
 
-### 1. Scholarship Eligibility Checker (Rule-Based)
-Checks per category:
-- **SC/ST**: Income ≤ ₹2.5L, marks ≥ 50%
-- **OBC**: Income ≤ ₹1.5L, marks ≥ 55%
-- **EWS**: Income ≤ ₹8L, marks ≥ 60%
-- **General**: Income ≤ ₹6L, marks ≥ 75%
-
-### 2. OCR Document Reader (pytesseract)
-Extracts from: Aadhaar, Marksheet, Income Certificate, Bank Passbook
-
-### 3. Mismatch Detection (rapidfuzz)
-- **Name**: `fuzz.token_sort_ratio` — handles "Priya M" vs "M. Priya"
-- **DOB**: Exact digit match + fuzzy fallback
-- **Income**: % deviation scoring
-- **Bank**: Exact then fuzzy match
-
-### 4. Duplicate Detection
-- Exact Aadhaar number match
-- Exact bank account match
-- Fuzzy name + same DOB (>90% similarity)
-
-### 5. ML Classifier (Random Forest)
-Features: `[income_ok, marks_ok, course_ok, year_ok, name_score, dob_score, income_score, bank_score, overall_score, duplicate_flag]`
-
-Output: Approved / Rejected / Needs Review / Suspicious + confidence %
+* PDF Document Support
+* Voice-Enabled ScholarBot
+* Multi-Language Support
+* Admin Authentication System
+* Scholarship Web Scraping
+* Email Notifications
+* Export Reports as PDF
+* Cloud Deployment
+* Student Portal
+* Real-Time Analytics
 
 ---
 
-## 🖥️ Tech Stack
+## 🔐 Security Features
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | Flask + Jinja2, custom CSS (no framework) |
-| Backend | Python 3.11 + Flask |
-| ML/NLP | scikit-learn, rapidfuzz |
-| OCR | pytesseract + Pillow |
-| Database | SQLite → PostgreSQL |
-| Data | pandas, NumPy |
+* Environment Variable Protection
+* File Upload Validation
+* Duplicate Application Detection
+* OCR-Based Verification
+* Eligibility Rule Validation
+* AI-Assisted Fraud Detection
 
 ---
 
-## 📊 Dashboard Features
-- Filter by status (Approved / Rejected / Needs Review / Suspicious)
-- Real-time search by name or Aadhaar
-- Confidence bars per application
-- Manual status override
-- OCR text viewer
-- Per-document match scores with visual bars
+## 🎯 Use Cases
+
+* Government Scholarship Portals
+* Educational Institutions
+* Universities & Colleges
+* NGOs
+* CSR Scholarship Programs
+* Educational Trusts
 
 ---
 
-## 🔧 Extending to PostgreSQL
+## 🌟 Highlights
 
-```python
-# In app.py, replace:
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///scholarship.db'
-# With:
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://user:pass@localhost/scholardb'
-# Then: pip install psycopg2-binary
-```
+✅ OCR-Based Document Verification
 
----
+✅ AI Scholarship Recommendation Engine
 
-## 🏆 SIH Demo Tips
-1. Submit a new application without documents → system simulates OCR
-2. Try submitting same Aadhaar twice → duplicate detection fires
-3. Use name "M. Priya" when Aadhaar says "Priya M" → name mismatch flag
-4. Set income above limit → rejected with explanation
-5. Use dashboard filters to show review queue workflow
+✅ Eligibility Scoring System
+
+✅ Duplicate Detection
+
+✅ Gemini-Powered ScholarBot
+
+✅ Interactive Dashboard
+
+✅ Automated Verification Workflow
+
+✅ Explainable AI Decisions
+
+
