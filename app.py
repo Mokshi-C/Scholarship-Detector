@@ -1,3 +1,4 @@
+from utils.chatbot import ask_scholarbot
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
@@ -10,7 +11,13 @@ from utils.scholarship_recommender import recommend_scholarships
 from utils.explainer import generate_explanation
 from utils.deadlines import get_active_scholarships
 from models.database import db, Application, Document
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+print("Gemini Key:", os.getenv("GEMINI_API_KEY"))
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///scholarship.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -232,7 +239,75 @@ def api_applications():
 @app.route('/api/deadlines')
 def api_deadlines():
     return jsonify(get_active_scholarships())
+@app.route('/api/chat', methods=['POST'])
+def scholarbot_chat():
 
+    data = request.json
+    user_message = data.get('message', '')
 
+    latest_application = Application.query.order_by(
+        Application.created_at.desc()
+    ).first()
+
+    if not latest_application:
+        return jsonify({
+            "response": "No application data found. Please submit an application first."
+        })
+
+    student_profile = {
+        'income': latest_application.income,
+        'marks': latest_application.marks,
+        'category': latest_application.category,
+        'course': latest_application.course,
+        'gender': latest_application.gender,
+    }
+
+    recommendations = recommend_scholarships(student_profile)
+
+    scholarship_context = ""
+
+    for s in recommendations:
+        scholarship_context += f"""
+        Scholarship Name: {s.get('name')}
+        Match Score: {s.get('match_score')}
+        Description: {s.get('description', '')}
+        """
+
+    student_context = f"""
+    Student Name: {latest_application.name}
+
+    Category: {latest_application.category}
+    Gender: {latest_application.gender}
+    Course: {latest_application.course}
+
+    Annual Income: ₹{latest_application.income}
+
+    Marks: {latest_application.marks}
+
+    Eligibility Score: {latest_application.eligibility_score}
+
+    Application Status: {latest_application.status}
+
+    Recommended Scholarship:
+    {latest_application.recommended_scholarship}
+    """
+
+    try:
+
+        response = ask_scholarbot(
+            user_message,
+            scholarship_context,
+            student_context
+        )
+
+        return jsonify({
+            "response": response
+        })
+
+    except Exception as e:
+
+        return jsonify({
+            "response": f"Error: {str(e)}"
+        }), 500
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

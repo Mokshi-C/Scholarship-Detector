@@ -1,67 +1,182 @@
 {% extends "base.html" %}
 {% block title %}Application Result{% endblock %}
 
+{% block extra_css %}
+<style>
+  .result-container { max-width: 880px; margin: 0 auto; }
+
+  .success-header { text-align: center; margin-bottom: var(--sp-8); }
+
+  .status-banner {
+    padding: var(--sp-6);
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--sp-6);
+    margin-bottom: var(--sp-6);
+    border: 1px solid var(--border);
+  }
+
+  .score-ring { width: 104px; height: 104px; position: relative; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .score-ring svg { transform: rotate(-90deg); }
+  .score-ring circle { fill: none; stroke-width: 7; stroke-linecap: round; }
+  .score-ring .bg { stroke: var(--border); }
+  .score-ring .progress { stroke: var(--primary); stroke-dasharray: 283; transition: stroke-dashoffset 1s ease-out; }
+  .score-value { position: absolute; font-size: 1.3rem; font-weight: 800; color: var(--text-main); }
+
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-5); margin-bottom: var(--sp-6); }
+
+  .recommendation-card {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+    color: white;
+    border-radius: var(--radius-lg);
+    padding: var(--sp-6);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .recommendation-card::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 130px; height: 130px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 50%;
+  }
+
+  .reason-item { display: flex; gap: var(--sp-3); margin-bottom: var(--sp-3); }
+  .reason-icon {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--approved-light);
+    color: var(--approved);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .reason-icon i { width: 13px; height: 13px; }
+
+  @media (max-width: 768px) {
+    .result-grid { grid-template-columns: 1fr; }
+    .status-banner { flex-direction: column; text-align: center; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-{% set status_class = {
-  'Approved': 'badge-approved',
-  'Rejected': 'badge-rejected',
-  'Needs Review': 'badge-review',
-  'Suspicious': 'badge-suspicious'
-} %}
+<div class="result-container">
+  <div class="success-header">
+    <div style="width: 56px; height: 56px; background: var(--approved-light); color: var(--approved); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto var(--sp-4);">
+      <i data-lucide="check-circle" style="width: 28px; height: 28px;"></i>
+    </div>
+    <h1 style="font-size: 1.75rem; font-weight: 800; letter-spacing: -0.025em; margin-bottom: var(--sp-2);">Application Submitted</h1>
+    <p style="color: var(--text-muted); font-size: 0.9rem;">Verification for {{ app.name }} (ID: #{{ app.id }}) is complete.</p>
+  </div>
 
-<div class="page-header">
-  <h1>Application Submitted</h1>
-  <p>Here's the automated verification result for {{ app.name }} (Application #{{ app.id }}).</p>
-</div>
+  {% set s_color = 'var(--approved)' if app.status == 'Approved' else ('var(--rejected)' if app.status == 'Rejected' else ('var(--review)' if app.status == 'Needs Review' else 'var(--suspicious)')) %}
+  <div class="status-banner" style="background: {{ s_color }}08; border-color: {{ s_color }}25;">
+    <div class="score-ring">
+      <svg width="104" height="104">
+        <circle class="bg" cx="52" cy="52" r="45"></circle>
+        <circle class="progress" cx="52" cy="52" r="45" style="stroke-dasharray: 283; stroke-dashoffset: calc(283 - (283 * {{ app.confidence }}) / 100); stroke: {{ s_color }};"></circle>
+      </svg>
+      <div class="score-value">{{ app.confidence }}%</div>
+    </div>
+    <div>
+      <div style="font-size: 0.78rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: var(--sp-1);">Verification Status</div>
+      <div style="font-size: 1.3rem; font-weight: 800; color: {{ s_color }};">{{ app.status }}</div>
+      <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: var(--sp-1);">Based on automated document analysis and eligibility rules.</p>
+    </div>
+  </div>
 
-<div class="grid-2">
-  <div class="card">
-    <h3>Status</h3>
-    <p style="font-size:1.3rem; margin: 4px 0 12px;">
-      <span class="badge {{ status_class.get(app.status, '') }}">{{ app.status }}</span>
-    </p>
-    <div class="info-grid">
-      <div><span>Confidence</span><strong>{{ app.confidence }}%</strong></div>
-      <div><span>Eligibility Score</span><strong>{{ app.eligibility_score }}/100
-        ({{ 'Excellent' if app.eligibility_score >= 90 else ('Good' if app.eligibility_score >= 75 else ('Average' if app.eligibility_score >= 60 else 'Weak')) }})
-      </strong></div>
-      <div><span>Category</span><strong>{{ app.category }}</strong></div>
-      <div><span>Course</span><strong>{{ app.course }}</strong></div>
+  <div class="result-grid">
+    <div class="recommendation-card">
+      <div style="display: flex; align-items: center; gap: var(--sp-2); margin-bottom: var(--sp-5);">
+        <i data-lucide="sparkles" style="width:16px;height:16px;"></i>
+        <span style="font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.7rem;">Top Recommendation</span>
+      </div>
+      {% if app.recommended_scholarship %}
+        <h2 style="font-size: 1.4rem; font-weight: 800; margin-bottom: var(--sp-2); line-height: 1.25;">{{ app.recommended_scholarship }}</h2>
+        <div style="font-size: 0.95rem; opacity: 0.9; margin-bottom: var(--sp-5);">Match Score: <strong>{{ app.recommendation_score }}%</strong></div>
+        <p style="font-size: 0.82rem; opacity: 0.8; margin-bottom: var(--sp-6); flex: 1;">We've identified this scholarship as the best fit for your academic profile and financial background.</p>
+      {% else %}
+        <p style="flex: 1;">No matching scholarship found at this moment.</p>
+      {% endif %}
+      <a href="{{ url_for('application_detail', app_id=app.id) }}" class="btn" style="background: white; color: var(--primary); width: 100%; justify-content: center;">
+        View Detailed Analysis
+      </a>
+    </div>
+
+    <div class="card">
+      <h3 style="font-size: 0.95rem; font-weight: 700; margin-bottom: var(--sp-5);">Eligibility Breakdown</h3>
+      <div style="display: flex; flex-direction: column; gap: var(--sp-4);">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--sp-3); background: var(--bg-subtle); border-radius: var(--radius-sm);">
+          <div style="display: flex; align-items: center; gap: var(--sp-2);">
+            <i data-lucide="target" style="color: var(--primary); width: 18px;"></i>
+            <span style="font-weight: 500; font-size: 0.85rem;">Overall Score</span>
+          </div>
+          <span style="font-weight: 700; font-size: 1.05rem;">{{ app.eligibility_score }}/100</span>
+        </div>
+
+        <div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: var(--sp-2);">
+            <span>Academic Performance</span>
+            <span style="font-weight: 600;">{{ app.marks }}%</span>
+          </div>
+          <div class="progress-bar" style="height: 6px;">
+            <div class="progress-fill" style="width: {{ app.marks }}%; background: var(--primary);"></div>
+          </div>
+        </div>
+
+        <div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: var(--sp-2);">
+            <span>Financial Need</span>
+            <span style="font-weight: 600;">₹{{ "{:,.0f}".format(app.income) }}</span>
+          </div>
+          <div class="progress-bar" style="height: 6px;">
+            {% set income_perc = [0, 100 - (app.income / 5000)] | max %}
+            <div class="progress-fill" style="width: {{ income_perc }}%; background: var(--approved);"></div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
   <div class="card">
-    <h3>🎯 Recommended Scholarship</h3>
-    {% if app.recommended_scholarship %}
-      <div class="top-rec-name">{{ app.recommended_scholarship }}</div>
-      <div class="top-rec-meta">
-        <span>Match Score: <strong>{{ app.recommendation_score }}%</strong></span>
+    <div style="display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-5);">
+      <div style="width: 30px; height: 30px; background: var(--primary-light); color: var(--primary); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center;">
+        <i data-lucide="bot" style="width: 16px; height: 16px;"></i>
       </div>
-      <p class="muted" style="margin-top:8px;">
-        Based on your income, marks, category, course and gender against current scholarship schemes.
-      </p>
-    {% else %}
-      <p class="muted">No matching scholarship found for this profile.</p>
-    {% endif %}
+      <h3 style="font-size: 0.95rem; font-weight: 700;">AI Explanation</h3>
+    </div>
+    <p style="font-size: 1rem; font-weight: 500; margin-bottom: var(--sp-5); color: var(--text-main);">{{ explanation.get('summary', '') }}</p>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4);">
+      {% for reason in explanation.get('reasons', []) %}
+      <div class="reason-item">
+        <div class="reason-icon"><i data-lucide="check"></i></div>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">{{ reason }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div style="display: flex; justify-content: center; gap: var(--sp-3); margin-top: var(--sp-8);">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Return to Dashboard</a>
+    <a href="{{ url_for('apply') }}" class="btn btn-primary">Submit Another Application</a>
   </div>
 </div>
+{% endblock %}
 
-<div class="card" style="margin-bottom: 22px;">
-  <h3>🤖 AI Explanation</h3>
-  <p class="explanation-summary">{{ explanation.get('summary', '') }}</p>
-  {% set reasons = explanation.get('reasons', []) %}
-  {% if reasons %}
-  <ul class="reason-list">
-    {% for reason in reasons %}
-      <li>{{ reason }}</li>
-    {% endfor %}
-  </ul>
-  {% endif %}
-</div>
-
-<div style="display:flex; gap:12px;">
-  <a class="btn" href="{{ url_for('application_detail', app_id=app.id) }}">View Full Details</a>
-  <a class="btn" style="background:#374151;" href="{{ url_for('dashboard') }}">Back to Dashboard</a>
-  <a class="btn" style="background:#374151;" href="{{ url_for('apply') }}">Submit Another Application</a>
-</div>
+{% block scripts %}
+<script>
+  window.onload = () => {
+    const circles = document.querySelectorAll('.score-ring .progress');
+    circles.forEach(circle => {
+      const offset = circle.style.strokeDashoffset;
+      circle.style.strokeDashoffset = 283;
+      setTimeout(() => { circle.style.strokeDashoffset = offset; }, 100);
+    });
+  };
+</script>
 {% endblock %}

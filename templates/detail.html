@@ -1,220 +1,287 @@
 {% extends "base.html" %}
 {% block title %}Application #{{ app.id }}{% endblock %}
 
+{% block extra_css %}
+<style>
+  .detail-grid { display: grid; grid-template-columns: 260px 1fr; gap: var(--sp-6); }
+
+  .profile-sidebar { display: flex; flex-direction: column; gap: var(--sp-5); }
+
+  .profile-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-6);
+    text-align: center;
+  }
+
+  .avatar-large {
+    width: 64px; height: 64px;
+    border-radius: var(--radius-md);
+    background: var(--primary);
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem; font-weight: 700;
+    margin: 0 auto var(--sp-4);
+  }
+
+  .info-list { display: flex; flex-direction: column; gap: var(--sp-3); margin-top: var(--sp-5); text-align: left; }
+  .info-item { display: flex; flex-direction: column; gap: 2px; }
+  .info-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-faint); font-weight: 700; }
+  .info-value { font-size: 0.85rem; font-weight: 600; }
+
+  .content-area { display: flex; flex-direction: column; gap: var(--sp-5); }
+
+  .section-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--sp-5); flex-wrap: wrap; gap: var(--sp-3); }
+
+  .doc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--sp-3); }
+  .doc-card {
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: var(--sp-3);
+    display: flex; align-items: center; gap: var(--sp-3);
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .doc-card:hover { border-color: var(--primary); background: var(--bg-card); }
+
+  .timeline { position: relative; padding-left: var(--sp-8); }
+  .timeline::before { content: ''; position: absolute; left: 9px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+  .timeline-item { position: relative; padding-bottom: var(--sp-5); }
+  .timeline-dot { position: absolute; left: -26px; top: 4px; width: 9px; height: 9px; border-radius: 50%; background: var(--primary); border: 2px solid var(--bg-card); }
+
+  .status-selector {
+    padding: 8px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-main);
+    font-weight: 600;
+    font-size: 0.85rem;
+    outline: none;
+  }
+
+  /* Recommended scholarships */
+  .rec-list { display: flex; flex-direction: column; gap: var(--sp-3); }
+  .rec-row {
+    display: flex; align-items: center; gap: var(--sp-4);
+    padding: var(--sp-4);
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+  .rec-rank {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--bg-card); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.78rem; color: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .rec-rank.top { background: var(--primary); color: white; border-color: var(--primary); }
+  .rec-score-pill { font-weight: 700; font-size: 0.85rem; white-space: nowrap; }
+
+  @media (max-width: 1000px) { .detail-grid { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
 {% block content %}
-{% set status_class = {
-  'Approved': 'badge-approved',
-  'Rejected': 'badge-rejected',
-  'Needs Review': 'badge-review',
-  'Suspicious': 'badge-suspicious'
-} %}
-
-<div class="page-header">
-  <h1>Application #{{ app.id }} — {{ app.name }}</h1>
-  <p>
-    <span class="badge {{ status_class.get(app.status, '') }}">{{ app.status }}</span>
-    &nbsp;Confidence: <strong>{{ app.confidence }}%</strong>
-    &nbsp;·&nbsp; Eligibility Score: <strong>{{ app.eligibility_score }}/100</strong>
-    {% if app.duplicate_flag %}
-      &nbsp;·&nbsp; <span class="badge badge-suspicious">⚠ Duplicate Flag</span>
-    {% endif %}
-  </p>
+<div class="section-header">
+  <div>
+    <div class="page-title" style="font-size: 1.3rem;">Application Detail</div>
+    <div class="page-subtitle">Reviewing application #{{ app.id }} submitted on {{ app.created_at.strftime('%B %d, %Y') }}</div>
+  </div>
+  <div style="display: flex; gap: var(--sp-2);">
+    <select id="statusSelect" class="status-selector">
+      <option value="Approved" {{ 'selected' if app.status == 'Approved' else '' }}>Approved</option>
+      <option value="Rejected" {{ 'selected' if app.status == 'Rejected' else '' }}>Rejected</option>
+      <option value="Needs Review" {{ 'selected' if app.status == 'Needs Review' else '' }}>Needs Review</option>
+      <option value="Suspicious" {{ 'selected' if app.status == 'Suspicious' else '' }}>Suspicious</option>
+    </select>
+    <button class="btn btn-primary" onclick="updateStatus({{ app.id }})">Update Status</button>
+  </div>
 </div>
 
-<!-- Student / Application Info -->
-<div class="card" style="margin-bottom: 22px;">
-  <h3>Application Details</h3>
-  <div class="info-grid">
-    <div><span>Name</span><strong>{{ app.name }}</strong></div>
-    <div><span>Date of Birth</span><strong>{{ app.dob }}</strong></div>
-    <div><span>Aadhaar</span><strong>{{ app.aadhaar }}</strong></div>
-    <div><span>Gender</span><strong>{{ app.gender }}</strong></div>
-    <div><span>Category</span><strong>{{ app.category }}</strong></div>
-    <div><span>Income</span><strong>₹{{ "{:,.0f}".format(app.income) }}</strong></div>
-    <div><span>Marks</span><strong>{{ app.marks }}%</strong></div>
-    <div><span>Course</span><strong>{{ app.course }}</strong></div>
-    <div><span>Year</span><strong>{{ app.year }}</strong></div>
-    <div><span>Bank</span><strong>{{ app.bank_name }}</strong></div>
-    <div><span>Account No.</span><strong>{{ app.bank_account }}</strong></div>
-    <div><span>Submitted</span><strong>{{ app.created_at }}</strong></div>
-  </div>
-  {% if app.duplicate_flag and app.duplicate_reason %}
-    <p style="margin-top:12px; color: var(--suspicious); font-weight:600;">
-      ⚠ {{ app.duplicate_reason }}
-    </p>
-  {% endif %}
-</div>
+<div class="detail-grid">
+  <!-- Sidebar -->
+  <div class="profile-sidebar">
+    <div class="profile-card">
+      <div class="avatar-large">{{ app.name[0] }}</div>
+      <h2 style="font-size: 1.1rem; font-weight: 700;">{{ app.name }}</h2>
+      <p style="color: var(--text-muted); font-size: 0.82rem; margin-bottom: var(--sp-3);">{{ app.course }}</p>
 
-<div class="grid-2">
-  <!-- Eligibility Breakdown -->
-  <div class="card">
-    <h3>📋 Eligibility Breakdown</h3>
-    <table>
-      <thead><tr><th>Criterion</th><th>Status</th><th>Details</th></tr></thead>
-      <tbody>
-        {% for key in ['income', 'marks', 'course', 'year', 'category'] %}
-          {% set crit = eligibility.get(key) %}
-          {% if crit %}
-          <tr>
-            <td>{{ key|capitalize }}</td>
-            <td>
-              {% if crit.get('pass') %}
-                <span class="badge badge-pass">Pass</span>
-              {% else %}
-                <span class="badge badge-fail">Fail</span>
-              {% endif %}
-            </td>
-            <td class="muted">{{ crit.get('message', '') }}</td>
-          </tr>
-          {% endif %}
-        {% endfor %}
-        <tr>
-          <td><strong>Overall</strong></td>
-          <td>
-            {% if eligibility.get('overall') %}
-              <span class="badge badge-pass">Eligible</span>
-            {% else %}
-              <span class="badge badge-fail">Not Eligible</span>
-            {% endif %}
-          </td>
-          <td class="muted">Combined result of all criteria above</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+      {% set s_color = 'var(--approved)' if app.status == 'Approved' else ('var(--rejected)' if app.status == 'Rejected' else ('var(--review)' if app.status == 'Needs Review' else 'var(--suspicious)')) %}
+      <span class="badge" style="background: {{ s_color }}15; color: {{ s_color }}; font-size: 0.8rem; padding: 5px 14px;">
+        {{ app.status }}
+      </span>
 
-  <!-- Document Match Scores -->
-  <div class="card">
-    <h3>🔍 Document Match Scores</h3>
-    {% for label, key in [('Name', 'name_match'), ('Date of Birth', 'dob_match'), ('Income', 'income_match'), ('Bank Account', 'bank_match'), ('Overall', 'overall')] %}
-      {% set val = match_scores.get(key) %}
-      {% if val is not none %}
-      <div style="margin-bottom: 10px;">
-        <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:4px;">
-          <span>{{ label }}</span><strong>{{ val }}%</strong>
-        </div>
-        <div class="progress" style="width:100%;">
-          <div class="progress-fill" style="width: {{ val }}%; background: {{ 'var(--approved)' if val >= 75 else ('var(--review)' if val >= 50 else 'var(--rejected)') }};"></div>
-        </div>
+      <div class="info-list">
+        <div class="info-item"><span class="info-label">Aadhaar</span><span class="info-value">{{ app.aadhaar }}</span></div>
+        <div class="info-item"><span class="info-label">Date of Birth</span><span class="info-value">{{ app.dob }}</span></div>
+        <div class="info-item"><span class="info-label">Category</span><span class="info-value">{{ app.category }}</span></div>
+        <div class="info-item"><span class="info-label">Annual Income</span><span class="info-value">₹{{ "{:,.0f}".format(app.income) }}</span></div>
       </div>
-      {% endif %}
-    {% endfor %}
-
-    {% if flags %}
-      <div class="form-section-title" style="margin-top:18px;">Flags Raised</div>
-      <ul class="reason-list">
-        {% for flag in flags %}
-          <li>{{ flag }}</li>
-        {% endfor %}
-      </ul>
-    {% endif %}
-  </div>
-</div>
-
-<!-- Recommended Scholarships -->
-<div class="table-card" style="margin-bottom: 22px;">
-  <div class="table-card-header">
-    <h3>🎯 Recommended Scholarships</h3>
-  </div>
-  <table>
-    <thead>
-      <tr>
-        <th>Rank</th>
-        <th>Scholarship</th>
-        <th>Provider</th>
-        <th>Match Score</th>
-        <th>Eligibility Status</th>
-        <th>Reason</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for rec in recommendations %}
-      <tr>
-        <td>#{{ loop.index }}</td>
-        <td><strong>{{ rec.name }}</strong></td>
-        <td class="muted">{{ rec.provider }}</td>
-        <td>{{ rec.match_score }}%</td>
-        <td>
-          {% if rec.eligible %}
-            <span class="badge badge-pass">Eligible</span>
-          {% else %}
-            <span class="badge badge-fail">Not Eligible</span>
-          {% endif %}
-        </td>
-        <td class="muted">{{ rec.reason }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-
-<div class="grid-2">
-  <!-- AI Explanation -->
-  <div class="card">
-    <h3>🤖 AI Explanation</h3>
-    <p class="explanation-summary">{{ explanation.get('summary', '') }}</p>
-    {% set reasons = explanation.get('reasons', []) %}
-    {% if reasons %}
-    <ul class="reason-list">
-      {% for reason in reasons %}
-        <li>{{ reason }}</li>
-      {% endfor %}
-    </ul>
-    {% else %}
-      <p class="muted">No additional details available.</p>
-    {% endif %}
-  </div>
-
-  <!-- Status Update + Documents -->
-  <div class="card">
-    <h3>⚙️ Manual Review</h3>
-    <div class="status-update">
-      <select id="statusSelect">
-        <option value="Approved" {{ 'selected' if app.status == 'Approved' else '' }}>Approved</option>
-        <option value="Rejected" {{ 'selected' if app.status == 'Rejected' else '' }}>Rejected</option>
-        <option value="Needs Review" {{ 'selected' if app.status == 'Needs Review' else '' }}>Needs Review</option>
-        <option value="Suspicious" {{ 'selected' if app.status == 'Suspicious' else '' }}>Suspicious</option>
-      </select>
-      <button class="btn" onclick="updateStatus({{ app.id }})">Save Status</button>
     </div>
 
-    {% if app.documents %}
-      <div class="form-section-title" style="margin-top:20px;">Uploaded Documents</div>
-      {% for doc in app.documents %}
-        <details>
-          <summary>{{ doc.doc_type|replace('_', ' ')|capitalize }} — {{ doc.filepath.split('/')[-1] }}</summary>
-          <pre>{{ doc.extracted_text }}</pre>
-        </details>
-      {% endfor %}
-    {% else %}
-      <p class="muted" style="margin-top:16px;">No documents were uploaded for this application (OCR was simulated).</p>
-    {% endif %}
+    <div class="card">
+      <h3 style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: var(--sp-5);">Verification Scores</h3>
+      <div style="display: flex; flex-direction: column; gap: var(--sp-4);">
+        {% for label, key in [('Name Match', 'name_match'), ('DOB Match', 'dob_match'), ('Income Match', 'income_match'), ('Bank Match', 'bank_match')] %}
+          {% set val = match_scores.get(key, 0) %}
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.78rem; margin-bottom: var(--sp-2);">
+              <span>{{ label }}</span>
+              <span style="font-weight: 700;">{{ val }}%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: {{ val }}%; background: {{ 'var(--approved)' if val >= 80 else ('var(--review)' if val >= 50 else 'var(--rejected)') }};"></div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="content-area">
+    <div class="card">
+      <div style="display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-5);">
+        <i data-lucide="shield-check" style="color: var(--primary);"></i>
+        <h3 style="font-size: 0.95rem; font-weight: 700;">AI Eligibility Analysis</h3>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--sp-3); margin-bottom: var(--sp-6);">
+        {% for key in ['income', 'marks', 'course', 'year', 'category'] %}
+          {% set crit = eligibility.get(key) %}
+          <div style="padding: var(--sp-3); border-radius: var(--radius-sm); background: var(--bg-subtle); border: 1px solid var(--border);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-2);">
+              <span style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted);">{{ key }}</span>
+              {% if crit and crit.get('pass') %}
+                <i data-lucide="check-circle-2" style="color: var(--approved); width: 15px;"></i>
+              {% else %}
+                <i data-lucide="x-circle" style="color: var(--rejected); width: 15px;"></i>
+              {% endif %}
+            </div>
+            <div style="font-size: 0.82rem; font-weight: 500;">{{ crit.get('message', 'N/A') if crit else 'N/A' }}</div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <div style="padding: var(--sp-5); border-radius: var(--radius-md); background: var(--primary-light);">
+        <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: var(--sp-2); display: flex; align-items: center; gap: var(--sp-2);">
+          <i data-lucide="bot" style="width: 16px;"></i> AI Summary
+        </h4>
+        <p style="font-size: 0.88rem; color: var(--text-main); line-height: 1.6;">{{ explanation.get('summary', '') }}</p>
+      </div>
+    </div>
+
+    <!-- Recommended Scholarships -->
+    <div class="card">
+      <div style="display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-5);">
+        <i data-lucide="award" style="color: var(--primary);"></i>
+        <h3 style="font-size: 0.95rem; font-weight: 700;">Recommended Scholarships</h3>
+      </div>
+      <div class="rec-list">
+        {% for rec in recommendations %}
+        <div class="rec-row">
+          <div class="rec-rank {{ 'top' if loop.index == 1 else '' }}">{{ loop.index }}</div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-weight: 700; font-size: 0.88rem;">{{ rec.name }}</div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">{{ rec.reason }}</div>
+          </div>
+          <div style="text-align: right; flex-shrink: 0;">
+            <div class="rec-score-pill" style="color: {{ 'var(--approved)' if rec.match_score >= 75 else ('var(--review)' if rec.match_score >= 50 else 'var(--rejected)') }};">{{ rec.match_score }}%</div>
+            <span class="badge" style="background: {{ 'var(--approved-light)' if rec.eligible else 'var(--rejected-light)' }}; color: {{ 'var(--approved)' if rec.eligible else 'var(--rejected)' }}; margin-top: 4px;">
+              {{ 'Eligible' if rec.eligible else 'Not Eligible' }}
+            </span>
+          </div>
+        </div>
+        {% else %}
+        <div class="empty-state"><i data-lucide="award"></i><div>No scholarship matches found</div></div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="font-size: 0.95rem; font-weight: 700; margin-bottom: var(--sp-5);">Uploaded Documents</h3>
+      <div class="doc-grid">
+        {% if app.documents %}
+          {% for doc in app.documents %}
+          <div class="doc-card" onclick="showDoc('{{ doc.doc_type }}', `{{ doc.extracted_text }}`)">
+            <div style="width: 34px; height: 34px; border-radius: var(--radius-sm); background: var(--bg-card); display: flex; align-items: center; justify-content: center; color: var(--primary); border: 1px solid var(--border);">
+              <i data-lucide="file-text" style="width:16px;height:16px;"></i>
+            </div>
+            <div style="overflow: hidden;">
+              <div style="font-weight: 600; font-size: 0.82rem; white-space: nowrap; text-overflow: ellipsis;">{{ doc.doc_type|replace('_', ' ')|capitalize }}</div>
+              <div style="font-size: 0.68rem; color: var(--text-muted);">Click to view OCR</div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p style="color: var(--text-muted); font-size: 0.85rem;">No physical documents uploaded. Analysis based on manual entry.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="font-size: 0.95rem; font-weight: 700; margin-bottom: var(--sp-5);">Activity Timeline</h3>
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div style="font-weight: 600; font-size: 0.85rem;">Application Received</div>
+          <div style="font-size: 0.72rem; color: var(--text-muted);">{{ app.created_at.strftime('%B %d, %Y at %H:%M') }}</div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div style="font-weight: 600; font-size: 0.85rem;">AI Verification Completed</div>
+          <div style="font-size: 0.72rem; color: var(--text-muted);">{{ app.confidence }}% Confidence Score assigned</div>
+        </div>
+        <div class="timeline-item" style="padding-bottom: 0;">
+          <div class="timeline-dot" style="background: var(--review);"></div>
+          <div style="font-weight: 600; font-size: 0.85rem;">Current Status: {{ app.status }}</div>
+          <div style="font-size: 0.72rem; color: var(--text-muted);">Awaiting final administrative approval</div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
-<div style="margin-top: 18px;">
-  <a class="btn" style="background:#374151;" href="{{ url_for('dashboard') }}">← Back to Dashboard</a>
+<!-- OCR Modal -->
+<div id="docModal" style="display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.5); z-index: 1000; align-items: center; justify-content: center; padding: var(--sp-5);">
+  <div class="card" style="max-width: 560px; width: 100%; max-height: 80vh; overflow-y: auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-5);">
+      <h3 id="modalTitle" style="font-size:0.95rem;">Document OCR</h3>
+      <button onclick="closeDoc()" class="btn-ghost" style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+    </div>
+    <pre id="modalContent" style="background: var(--bg-subtle); padding: var(--sp-4); border-radius: var(--radius-sm); font-family: monospace; font-size: 0.78rem; white-space: pre-wrap; border: 1px solid var(--border);"></pre>
+  </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-function updateStatus(appId) {
-  const status = document.getElementById('statusSelect').value;
-  fetch('/api/update_status', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ app_id: appId, status: status })
-  })
-  .then(r => r.json())
-  .then(data => {
-    if (data.success) {
-      location.reload();
-    } else {
-      alert('Failed to update status.');
-    }
-  })
-  .catch(() => alert('Network error while updating status.'));
-}
+  function updateStatus(appId) {
+    const status = document.getElementById('statusSelect').value;
+    fetch('/api/update_status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ app_id: appId, status: status })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) { location.reload(); } else { alert('Failed to update status.'); }
+    })
+    .catch(() => alert('Network error while updating status.'));
+  }
+
+  function showDoc(title, content) {
+    document.getElementById('modalTitle').innerText = title.replace('_', ' ').toUpperCase();
+    document.getElementById('modalContent').innerText = content;
+    document.getElementById('docModal').style.display = 'flex';
+  }
+
+  function closeDoc() {
+    document.getElementById('docModal').style.display = 'none';
+  }
 </script>
 {% endblock %}

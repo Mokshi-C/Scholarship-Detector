@@ -3,240 +3,694 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Dashboard{% endblock %} · ScholarVerify AI</title>
+  <title>{% block title %}Dashboard{% endblock %} · EligibilityX</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Icons (Lucide) -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
+    /*
+      EligibilityX — Design System
+      8px spacing scale · Inter · Linear/Notion/Stripe-inspired restraint
+    */
     :root {
-      --sidebar-bg: #151823;
-      --content-bg: #f4f6fb;
-      --card-bg: #ffffff;
-      --text: #1f2433;
-      --muted: #6b7280;
-      --border: #e5e7eb;
-      --primary: #4f46e5;
-      --primary-dark: #4338ca;
-      --approved: #16a34a;
-      --rejected: #dc2626;
-      --review: #d97706;
-      --suspicious: #7c3aed;
+        /* Color system (fixed per spec) */
+        --primary: #6366F1;
+        --primary-hover: #4F46E5;
+        --primary-light: rgba(99, 102, 241, 0.10);
+        --accent: #8B5CF6;
+        --accent-light: rgba(139, 92, 246, 0.10);
+
+        --bg-main: #F8FAFC;
+        --bg-sidebar: #FFFFFF;
+        --bg-card: #FFFFFF;
+        --bg-input: #F1F5F9;
+        --bg-subtle: #F1F5F9;
+
+        --text-main: #0F172A;
+        --text-muted: #64748B;
+        --text-faint: #94A3B8;
+        --text-on-primary: #FFFFFF;
+
+        --border: #E2E8F0;
+        --border-hover: #CBD5E1;
+
+        /* Status colors */
+        --approved: #10B981;
+        --approved-light: rgba(16, 185, 129, 0.10);
+        --rejected: #EF4444;
+        --rejected-light: rgba(239, 68, 68, 0.10);
+        --review: #F59E0B;
+        --review-light: rgba(245, 158, 11, 0.10);
+        --suspicious: #8B5CF6;
+        --suspicious-light: rgba(139, 92, 246, 0.10);
+
+        /* 8px spacing scale */
+        --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+        --sp-5: 20px; --sp-6: 24px; --sp-8: 32px; --sp-10: 40px;
+        --sp-12: 48px; --sp-16: 64px;
+
+        /* Layout */
+        --sidebar-width: 220px;
+        --sidebar-collapsed: 72px;
+        --topbar-height: 60px;
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 16px;
+        --radius-xl: 20px;
+
+        /* Shadows — soft, low-contrast */
+        --shadow-sm: 0 1px 2px 0 rgb(15 23 42 / 0.04);
+        --shadow: 0 2px 8px -2px rgb(15 23 42 / 0.06), 0 1px 2px -1px rgb(15 23 42 / 0.04);
+        --shadow-lg: 0 12px 24px -8px rgb(15 23 42 / 0.10), 0 4px 8px -4px rgb(15 23 42 / 0.06);
+        --shadow-xl: 0 24px 48px -12px rgb(15 23 42 / 0.16);
+
+        --transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    * { box-sizing: border-box; }
+    [data-theme="dark"] {
+        --bg-main: #0B0F19;
+        --bg-sidebar: #0F172A;
+        --bg-card: #131B2C;
+        --bg-input: #1A2336;
+        --bg-subtle: #1A2336;
+        --text-main: #F1F5F9;
+        --text-muted: #94A3B8;
+        --text-faint: #64748B;
+        --border: #1E293B;
+        --border-hover: #334155;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      margin: 0;
-      font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
-      background: var(--content-bg);
-      color: var(--text);
+        font-family: 'Inter', sans-serif;
+        background-color: var(--bg-main);
+        color: var(--text-main);
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
     }
-    a { color: var(--primary); }
 
-    .app-shell { display: flex; min-height: 100vh; }
+    h1, h2, h3, h4, h5, h6 {
+        letter-spacing: -0.02em;
+        font-weight: 700;
+    }
 
-    /* Sidebar */
+    a { color: inherit; }
+
+    /* ===== Layout shell ===== */
+    .app-container { display: flex; min-height: 100vh; }
+
     .sidebar {
-      width: 250px;
-      background: var(--sidebar-bg);
-      color: #e5e7eb;
-      padding: 24px 18px;
-      position: fixed;
-      top: 0; left: 0; bottom: 0;
-      display: flex;
-      flex-direction: column;
+        width: var(--sidebar-width);
+        background: var(--bg-sidebar);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        top: 0; bottom: 0; left: 0;
+        z-index: 50;
+        transition: var(--transition);
     }
-    .sidebar .brand {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: #fff;
-      margin-bottom: 6px;
+    .sidebar.collapsed { width: var(--sidebar-collapsed); }
+
+    .main-content {
+        flex: 1;
+        margin-left: var(--sidebar-width);
+        transition: var(--transition);
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
     }
-    .sidebar .tagline {
-      font-size: 0.75rem;
-      color: #9ca3af;
-      margin-bottom: 28px;
+    .main-content.expanded { margin-left: var(--sidebar-collapsed); }
+
+    .top-bar {
+        height: var(--topbar-height);
+        background: rgba(248, 250, 252, 0.8);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 var(--sp-8);
+        position: sticky;
+        top: 0;
+        z-index: 40;
     }
-    .sidebar nav a {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: #cbd5e1;
-      text-decoration: none;
-      padding: 10px 14px;
-      border-radius: 8px;
-      margin-bottom: 4px;
-      font-size: 0.92rem;
-      transition: background .15s, color .15s;
-    }
-    .sidebar nav a:hover { background: rgba(255,255,255,0.06); color: #fff; }
-    .sidebar nav a.active { background: var(--primary); color: #fff; }
-    .sidebar .footer-note {
-      margin-top: auto;
-      font-size: 0.72rem;
-      color: #6b7280;
-      line-height: 1.5;
+    [data-theme="dark"] .top-bar { background: rgba(11, 15, 25, 0.8); }
+
+    .content-body {
+        padding: var(--sp-8);
+        max-width: 1280px;
+        margin: 0 auto;
+        width: 100%;
+        flex: 1;
     }
 
-    /* Main */
-    .main { margin-left: 250px; flex: 1; padding: 28px 36px; }
-    .page-header { margin-bottom: 22px; }
-    .page-header h1 { margin: 0 0 4px; font-size: 1.6rem; }
-    .page-header p { margin: 0; color: var(--muted); font-size: 0.92rem; }
+    /* ===== Sidebar internals ===== */
+    .sidebar-header {
+        padding: var(--sp-5) var(--sp-5);
+        display: flex;
+        align-items: center;
+        gap: var(--sp-3);
+        overflow: hidden;
+        white-space: nowrap;
+        height: 64px;
+        border-bottom: 1px solid var(--border);
+    }
+    .logo-icon {
+        width: 32px; height: 32px;
+        background: var(--primary);
+        border-radius: var(--radius-sm);
+        display: flex; align-items: center; justify-content: center;
+        color: white; flex-shrink: 0;
+    }
+    .brand-block { overflow: hidden; }
+    .brand-name { font-weight: 700; font-size: 0.95rem; letter-spacing: -0.01em; line-height: 1.2; }
+    .brand-tagline { font-size: 0.65rem; color: var(--text-faint); font-weight: 500; white-space: nowrap; }
+    .sidebar.collapsed .brand-block,
+    .sidebar.collapsed .nav-label,
+    .sidebar.collapsed .nav-section-label,
+    .sidebar.collapsed .footer-label { display: none; }
 
-    /* Grid helpers */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 14px;
-      margin-bottom: 22px;
-    }
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1.3fr;
-      gap: 16px;
-      margin-bottom: 22px;
-    }
-    @media (max-width: 900px) {
-      .grid-2 { grid-template-columns: 1fr; }
+    .sidebar-nav { flex: 1; padding: var(--sp-3); overflow-y: auto; }
+
+    .nav-section-label {
+        margin: var(--sp-5) var(--sp-3) var(--sp-2);
+        font-size: 0.68rem;
+        text-transform: uppercase;
+        color: var(--text-faint);
+        font-weight: 700;
+        letter-spacing: 0.06em;
     }
 
-    /* Cards */
-    .card, .stat-card, .table-card, .form-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 12px;
+    .nav-item {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-3);
+        padding: var(--sp-2) var(--sp-3);
+        color: var(--text-muted);
+        text-decoration: none;
+        border-radius: var(--radius-sm);
+        margin-bottom: 2px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: var(--transition);
+        white-space: nowrap;
+        position: relative;
     }
-    .card { padding: 18px 20px; }
-    .card h3 { margin: 0 0 14px; font-size: 1rem; }
+    .nav-item i { width: 18px; height: 18px; flex-shrink: 0; }
+    .nav-item:hover { background: var(--bg-subtle); color: var(--text-main); }
+    .nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+    .sidebar.collapsed .nav-item { justify-content: center; padding: var(--sp-3); }
 
-    .stat-card { padding: 16px 18px; }
-    .stat-card .value { font-size: 1.7rem; font-weight: 700; }
-    .stat-card .label {
-      color: var(--muted); font-size: 0.74rem;
-      text-transform: uppercase; letter-spacing: .04em; margin-top: 2px;
-    }
-    .stat-approved .value { color: var(--approved); }
-    .stat-rejected .value { color: var(--rejected); }
-    .stat-review .value { color: var(--review); }
-    .stat-suspicious .value { color: var(--suspicious); }
+    .sidebar-footer { padding: var(--sp-3); border-top: 1px solid var(--border); }
 
-    /* Tables */
-    .table-card { overflow-x: auto; }
-    .table-card-header {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 16px 20px; border-bottom: 1px solid var(--border);
+    /* ===== Common components ===== */
+    .card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        padding: var(--sp-6);
+        box-shadow: var(--shadow-sm);
+        transition: var(--transition);
     }
-    .table-card-header h3 { margin: 0; font-size: 1rem; }
-    .table-card-header input {
-      padding: 8px 12px; border: 1px solid var(--border);
-      border-radius: 8px; font-size: 0.85rem; width: 240px;
-    }
-    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-    th {
-      text-align: left; background: #f9fafb; color: var(--muted);
-      font-size: 0.7rem; text-transform: uppercase; letter-spacing: .04em;
-      padding: 10px 14px; border-bottom: 1px solid var(--border); white-space: nowrap;
-    }
-    td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-    tr:last-child td { border-bottom: none; }
-    .muted { color: var(--muted); font-size: 0.8rem; }
 
-    /* Badges */
-    .badge {
-      display: inline-block; padding: 4px 10px; border-radius: 999px;
-      font-size: 0.74rem; font-weight: 600; white-space: nowrap;
-    }
-    .badge-approved { background: #dcfce7; color: var(--approved); }
-    .badge-rejected { background: #fee2e2; color: var(--rejected); }
-    .badge-review   { background: #fef3c7; color: var(--review); }
-    .badge-suspicious { background: #ede9fe; color: var(--suspicious); }
-    .badge-pass { background: #dcfce7; color: var(--approved); }
-    .badge-fail { background: #fee2e2; color: var(--rejected); }
-
-    /* Progress bars */
-    .progress {
-      height: 8px; width: 90px; border-radius: 999px;
-      background: #e5e7eb; overflow: hidden; display: inline-block; vertical-align: middle;
-    }
-    .progress-fill { height: 100%; border-radius: 999px; }
-
-    /* Buttons / links */
     .btn {
-      display: inline-block; background: var(--primary); color: #fff;
-      border: none; padding: 10px 22px; border-radius: 8px;
-      font-weight: 600; font-size: 0.9rem; cursor: pointer; text-decoration: none;
+        padding: 9px 16px;
+        border-radius: var(--radius-sm);
+        font-weight: 600;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: var(--transition);
+        display: inline-flex;
+        align-items: center;
+        gap: var(--sp-2);
+        border: none;
+        text-decoration: none;
+        line-height: 1.2;
     }
-    .btn:hover { background: var(--primary-dark); }
-    .btn-sm {
-      display: inline-block; background: var(--primary); color: #fff;
-      padding: 6px 14px; border-radius: 6px; font-size: 0.78rem;
-      font-weight: 600; text-decoration: none;
-    }
-    .btn-sm:hover { background: var(--primary-dark); }
-    .btn-link { font-size: 0.85rem; font-weight: 600; text-decoration: none; }
+    .btn i { width: 16px; height: 16px; }
 
-    /* Forms */
-    .form-card { padding: 26px 30px; max-width: 820px; }
-    .form-grid {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px; margin-bottom: 18px;
-    }
-    .form-section-title {
-      font-size: 0.78rem; text-transform: uppercase; letter-spacing: .05em;
-      color: var(--muted); margin: 22px 0 10px; font-weight: 700;
-    }
-    .form-group label {
-      display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;
-    }
-    .form-group input, .form-group select {
-      width: 100%; padding: 9px 12px; border: 1px solid var(--border);
-      border-radius: 8px; font-size: 0.9rem; background: #fff; color: var(--text);
-    }
-    .form-group input[type="file"] { padding: 6px; font-size: 0.82rem; }
+    .btn-primary { background: var(--primary); color: var(--text-on-primary); }
+    .btn-primary:hover { background: var(--primary-hover); }
 
-    /* Misc */
-    .top-rec-name { font-size: 1.15rem; font-weight: 700; margin-bottom: 6px; }
-    .top-rec-meta { display: flex; gap: 18px; font-size: 0.88rem; margin-bottom: 4px; }
-    .top-rec-sub { color: var(--muted); font-size: 0.8rem; margin-bottom: 12px; }
+    .btn-secondary { background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--border-hover); background: var(--bg-subtle); }
 
-    .reason-list { margin: 8px 0 0; padding-left: 20px; font-size: 0.9rem; line-height: 1.6; }
-    .explanation-summary { font-weight: 600; margin-bottom: 4px; }
+    .btn-ghost { background: transparent; color: var(--text-muted); border: none; }
+    .btn-ghost:hover { background: var(--bg-subtle); color: var(--text-main); }
 
-    details summary { cursor: pointer; font-weight: 600; font-size: 0.85rem; }
-    details pre {
-      background: #f9fafb; border: 1px solid var(--border); border-radius: 8px;
-      padding: 10px; font-size: 0.78rem; white-space: pre-wrap; margin-top: 8px;
+    .icon-btn {
+        width: 36px; height: 36px;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        background: var(--bg-card);
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: var(--transition);
+    }
+    .icon-btn:hover { color: var(--text-main); border-color: var(--border-hover); background: var(--bg-subtle); }
+    .icon-btn i { width: 17px; height: 17px; }
+
+    .badge {
+        padding: 3px 10px;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        white-space: nowrap;
     }
 
-    .status-update { display: flex; gap: 10px; align-items: center; }
-    .status-update select { padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; }
+    .input-control {
+        width: 100%;
+        padding: 10px 14px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        background: var(--bg-card);
+        color: var(--text-main);
+        font-size: 0.875rem;
+        font-family: inherit;
+        transition: var(--transition);
+    }
+    .input-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-light);
+    }
 
-    .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
-    .info-grid div span { display: block; color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: .04em; }
-    .info-grid div strong { font-size: 0.92rem; }
+    .table-container {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th {
+        text-align: left;
+        padding: var(--sp-3) var(--sp-5);
+        background: var(--bg-subtle);
+        color: var(--text-muted);
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid var(--border);
+    }
+    td { padding: var(--sp-4) var(--sp-5); border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+    tr:last-child td { border-bottom: none; }
+    tbody tr { transition: var(--transition); }
+    tbody tr:hover { background: var(--bg-subtle); }
+
+    .progress-bar { height: 5px; background: var(--border); border-radius: 999px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 999px; transition: width 0.6s ease-out; }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: var(--sp-8);
+        gap: var(--sp-4);
+        flex-wrap: wrap;
+    }
+    .page-title { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.025em; margin-bottom: 4px; }
+    .page-subtitle { color: var(--text-muted); font-size: 0.9rem; }
+
+    .empty-state {
+        text-align: center;
+        padding: var(--sp-12) var(--sp-6);
+        color: var(--text-muted);
+    }
+    .empty-state i { width: 36px; height: 36px; color: var(--text-faint); margin-bottom: var(--sp-3); }
+
+    /* ===== ScholarBot → Eligibility Assistant ===== */
+    #chat-toggle {
+        position: fixed;
+        bottom: 28px;
+        right: 28px;
+        width: 52px;
+        height: 52px;
+        border-radius: 16px;
+        background: var(--primary);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: var(--shadow-lg);
+        z-index: 100;
+        transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        border: none;
+    }
+    #chat-toggle:hover { transform: scale(1.06); }
+    #chat-toggle i { width: 22px; height: 22px; }
+
+    #chat-container {
+        position: fixed;
+        bottom: 92px;
+        right: 28px;
+        width: 380px;
+        height: 600px;
+        max-height: calc(100vh - 120px);
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-xl);
+        display: none;
+        flex-direction: column;
+        overflow: hidden;
+        z-index: 100;
+        animation: chatIn 0.22s ease-out;
+    }
+    @keyframes chatIn { from { opacity: 0; transform: translateY(16px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+    .chat-header {
+        padding: var(--sp-4) var(--sp-5);
+        background: var(--bg-card);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-shrink: 0;
+    }
+    .chat-avatar {
+        width: 34px; height: 34px;
+        background: var(--primary-light);
+        color: var(--primary);
+        border-radius: var(--radius-sm);
+        display: flex; align-items: center; justify-content: center;
+    }
+    .chat-title { font-weight: 700; font-size: 0.875rem; color: var(--text-main); }
+    .chat-status { font-size: 0.7rem; color: var(--approved); display: flex; align-items: center; gap: 5px; font-weight: 500; }
+    .chat-status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--approved); }
+
+    #chat-messages {
+        flex: 1;
+        padding: var(--sp-5);
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: var(--sp-3);
+        background: var(--bg-main);
+    }
+
+    .message {
+        max-width: 82%;
+        padding: 10px 14px;
+        border-radius: var(--radius-md);
+        font-size: 0.85rem;
+        line-height: 1.5;
+    }
+    .message.user {
+        align-self: flex-end;
+        background: var(--primary);
+        color: white;
+        border-bottom-right-radius: 4px;
+    }
+    .message.bot {
+        align-self: flex-start;
+        background: var(--bg-card);
+        color: var(--text-main);
+        border: 1px solid var(--border);
+        border-bottom-left-radius: 4px;
+    }
+
+    .chat-suggestions {
+        padding: var(--sp-3) var(--sp-5);
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--sp-2);
+        border-top: 1px solid var(--border);
+        flex-shrink: 0;
+    }
+    .suggestion-chip {
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: var(--bg-subtle);
+        color: var(--text-muted);
+        font-size: 0.75rem;
+        font-weight: 500;
+        cursor: pointer;
+        border: 1px solid var(--border);
+        transition: var(--transition);
+        white-space: nowrap;
+    }
+    .suggestion-chip:hover { background: var(--primary-light); color: var(--primary); border-color: transparent; }
+
+    .chat-input-row {
+        padding: var(--sp-4) var(--sp-5);
+        border-top: 1px solid var(--border);
+        display: flex;
+        gap: var(--sp-2);
+        flex-shrink: 0;
+    }
+
+    .typing-indicator { display: flex; gap: 4px; align-items: center; padding: 4px 0; }
+    .typing-dot {
+        width: 6px; height: 6px; border-radius: 50%;
+        background: var(--text-faint);
+        animation: typingBounce 1.2s infinite ease-in-out;
+    }
+    .typing-dot:nth-child(2) { animation-delay: 0.15s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes typingBounce { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-4px); opacity: 1; } }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .sidebar { transform: translateX(-100%); }
+        .sidebar.mobile-open { transform: translateX(0); width: 240px; }
+        .main-content { margin-left: 0 !important; }
+        #chat-container { width: calc(100% - 32px); right: 16px; left: 16px; height: 70vh; }
+        #chat-toggle { right: 20px; bottom: 20px; }
+        .content-body { padding: var(--sp-5); }
+    }
+
+    {% block extra_css %}{% endblock %}
   </style>
   {% block extra_head %}{% endblock %}
 </head>
 <body>
-  <div class="app-shell">
-    <aside class="sidebar">
-      <div class="brand">🎓 ScholarVerify AI</div>
-      <div class="tagline">Scholarship Recommendation &amp; Verification Platform</div>
-      <nav>
-        <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.path == url_for('dashboard') else '' }}">
-          📊 Dashboard
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-icon"><i data-lucide="shield-check"></i></div>
+        <div class="brand-block">
+          <div class="brand-name">EligibilityX</div>
+          <div class="brand-tagline">AI Scholarship Eligibility</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="{{ url_for('dashboard') }}" class="nav-item {{ 'active' if request.path == url_for('dashboard') else '' }}" title="Dashboard">
+          <i data-lucide="layout-dashboard"></i>
+          <span class="nav-label">Dashboard</span>
         </a>
-        <a href="{{ url_for('apply') }}" class="{{ 'active' if request.path == url_for('apply') else '' }}">
-          📝 New Application
+        <a href="{{ url_for('dashboard') }}#applications" class="nav-item" title="Applications">
+          <i data-lucide="folder-kanban"></i>
+          <span class="nav-label">Applications</span>
+        </a>
+        <a href="{{ url_for('dashboard') }}#recommendation" class="nav-item" title="Scholarships">
+          <i data-lucide="award"></i>
+          <span class="nav-label">Scholarships</span>
+        </a>
+        <a href="{{ url_for('dashboard') }}#analytics" class="nav-item" title="Analytics">
+          <i data-lucide="bar-chart-3"></i>
+          <span class="nav-label">Analytics</span>
+        </a>
+
+        <div class="nav-section-label">Actions</div>
+        <a href="{{ url_for('apply') }}" class="nav-item {{ 'active' if request.path == url_for('apply') else '' }}" title="New Application">
+          <i data-lucide="file-plus-2"></i>
+          <span class="nav-label">New Application</span>
+        </a>
+        <a href="#" class="nav-item" title="Settings">
+          <i data-lucide="settings"></i>
+          <span class="nav-label">Settings</span>
         </a>
       </nav>
-      <div class="footer-note">
-        AI-Powered Recommendation Engine · Eligibility Scoring ·
-        Automated Verification &amp; Explanations
+
+      <div class="sidebar-footer">
+        <div class="nav-item" id="theme-toggle" style="cursor:pointer;" title="Toggle theme">
+          <i data-lucide="moon"></i>
+          <span class="nav-label footer-label">Dark mode</span>
+        </div>
       </div>
     </aside>
 
-    <main class="main">
-      {% block content %}{% endblock %}
+    <!-- Main -->
+    <main class="main-content" id="main-content">
+      <header class="top-bar">
+        <button class="icon-btn" id="sidebar-toggle" style="border:none;background:none;">
+          <i data-lucide="panel-left"></i>
+        </button>
+        <div style="flex:1"></div>
+      </header>
+
+      <div class="content-body">
+        {% block content %}{% endblock %}
+      </div>
     </main>
   </div>
+
+  <!-- Eligibility Assistant -->
+  <button id="chat-toggle" aria-label="Open Eligibility Assistant">
+    <i data-lucide="sparkles"></i>
+  </button>
+
+  <div id="chat-container">
+    <div class="chat-header">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="chat-avatar"><i data-lucide="bot" style="width:18px;height:18px;"></i></div>
+        <div>
+          <div class="chat-title">Eligibility Assistant</div>
+          <div class="chat-status">Online</div>
+        </div>
+      </div>
+      <button id="chat-close" class="btn-ghost" style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;">
+        <i data-lucide="x" style="width:16px;height:16px;"></i>
+      </button>
+    </div>
+
+    <div id="chat-messages">
+      <div class="message bot">Hi! I'm your Eligibility Assistant. Ask me about scholarship matches, eligibility scores, or required documents.</div>
+    </div>
+
+    <div class="chat-suggestions">
+      <div class="suggestion-chip" onclick="suggestPrompt('Which scholarship fits me best?')">Best scholarship</div>
+      <div class="suggestion-chip" onclick="suggestPrompt('Why was my application flagged?')">Why flagged?</div>
+      <div class="suggestion-chip" onclick="suggestPrompt('What documents do I need?')">Required docs</div>
+    </div>
+
+    <div class="chat-input-row">
+      <input type="text" id="user-message" class="input-control" placeholder="Ask anything..." onkeypress="if(event.key==='Enter') sendMessage()">
+      <button class="btn-primary" onclick="sendMessage()" style="padding:9px;border-radius:8px;width:38px;justify-content:center;">
+        <i data-lucide="send"></i>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('main-content');
+        const toggleBtn = document.getElementById('sidebar-toggle');
+
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                if (window.innerWidth <= 768) {
+                    sidebar.classList.toggle('mobile-open');
+                } else {
+                    sidebar.classList.toggle('collapsed');
+                    mainContent.classList.toggle('expanded');
+                }
+            });
+        }
+
+        const themeToggle = document.getElementById('theme-toggle');
+        if (themeToggle) {
+            themeToggle.addEventListener('click', () => {
+                const body = document.body;
+                const icon = themeToggle.querySelector('i');
+                if (body.getAttribute('data-theme') === 'dark') {
+                    body.removeAttribute('data-theme');
+                    localStorage.setItem('theme', 'light');
+                    if (icon) icon.setAttribute('data-lucide', 'moon');
+                } else {
+                    body.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                    if (icon) icon.setAttribute('data-lucide', 'sun');
+                }
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            });
+        }
+
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            document.body.setAttribute('data-theme', 'dark');
+            const icon = document.querySelector('#theme-toggle i');
+            if (icon) icon.setAttribute('data-lucide', 'sun');
+        }
+
+        const chatToggle = document.getElementById('chat-toggle');
+        const chatContainer = document.getElementById('chat-container');
+        const chatClose = document.getElementById('chat-close');
+
+        if (chatToggle && chatContainer) {
+            chatToggle.addEventListener('click', () => {
+                const isVisible = chatContainer.style.display === 'flex';
+                chatContainer.style.display = isVisible ? 'none' : 'flex';
+                if (!isVisible) document.getElementById('user-message').focus();
+            });
+        }
+        if (chatClose) {
+            chatClose.addEventListener('click', () => { chatContainer.style.display = 'none'; });
+        }
+
+        const messagesContainer = document.getElementById('chat-messages');
+        if (messagesContainer) {
+            const observer = new MutationObserver(() => {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            });
+            observer.observe(messagesContainer, { childList: true });
+        }
+    });
+
+    async function sendMessage() {
+        const input = document.getElementById("user-message");
+        const message = input.value.trim();
+        if (!message) return;
+
+        const messagesContainer = document.getElementById("chat-messages");
+
+        const userMsgDiv = document.createElement('div');
+        userMsgDiv.className = 'message user';
+        userMsgDiv.textContent = message;
+        messagesContainer.appendChild(userMsgDiv);
+        input.value = "";
+
+        const typingId = 'typing-' + Date.now();
+        const botMsgDiv = document.createElement('div');
+        botMsgDiv.className = 'message bot';
+        botMsgDiv.id = typingId;
+        botMsgDiv.innerHTML = `<div class="typing-indicator"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>`;
+        messagesContainer.appendChild(botMsgDiv);
+
+        try {
+            const response = await fetch("/api/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: message })
+            });
+            const data = await response.json();
+            document.getElementById(typingId).innerHTML = data.response;
+        } catch (err) {
+            document.getElementById(typingId).innerHTML = '<span style="color: var(--rejected);">Connection error. Please try again.</span>';
+        }
+    }
+
+    function suggestPrompt(text) {
+        document.getElementById('user-message').value = text;
+        sendMessage();
+    }
+  </script>
   {% block scripts %}{% endblock %}
+  <script>
+    document.addEventListener("DOMContentLoaded", () => { if (typeof lucide !== 'undefined') lucide.createIcons(); });
+  </script>
 </body>
 </html>
