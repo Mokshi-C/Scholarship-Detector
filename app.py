@@ -16,8 +16,8 @@ import os
 
 load_dotenv()
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-print("Gemini Key:", os.getenv("GEMINI_API_KEY"))
+#GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+#print("Gemini Key:", os.getenv("GEMINI_API_KEY"))
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///scholarship.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
