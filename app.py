@@ -1,4 +1,4 @@
-from utils.chatbot import ask_scholarbot
+#from utils.chatbot import ask_scholarbot
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
@@ -236,7 +236,7 @@ def api_applications():
     } for a in apps])
 
 
-@app.route('/api/deadlines')
+'''@app.route('/api/deadlines')
 def api_deadlines():
     return jsonify(get_active_scholarships())
 @app.route('/api/chat', methods=['POST'])
@@ -308,6 +308,6 @@ def scholarbot_chat():
 
         return jsonify({
             "response": f"Error: {str(e)}"
-        }), 500
+        }), 500'''
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
