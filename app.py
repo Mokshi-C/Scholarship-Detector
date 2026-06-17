@@ -1,4 +1,4 @@
-#from utils.chatbot import ask_scholarbot
+from utils.chatbot import ask_scholarbot
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
@@ -12,20 +12,43 @@ from utils.explainer import generate_explanation
 from utils.deadlines import get_active_scholarships
 from models.database import db, Application, Document
 from dotenv import load_dotenv
-import os
 
 load_dotenv()
 
-#GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-#print("Gemini Key:", os.getenv("GEMINI_API_KEY"))
-app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///scholarship.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
-app.secret_key = 'sih-scholarship-key-2024'
+# --- Path setup: resolve everything relative to THIS file, not the process CWD ---
+# This matters because the working directory a server starts your app from can
+# vary between `python app.py`, `gunicorn app:app`, and a platform's own start
+# command. Anchoring to the file's own location makes this deterministic.
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Make sure the uploads folder exists (fresh clones won't have it)
+# --- Database path ---
+# On Render/Railway: set DATABASE_URL env var to use Postgres (recommended for
+# production — see deployment notes). Falls back to a local SQLite file inside
+# the project directory when DATABASE_URL is not set (e.g. local dev).
+DATABASE_URL = os.getenv("DATABASE_URL")
+if DATABASE_URL:
+    # Render/Railway Postgres URLs sometimes use the old "postgres://" scheme;
+    # SQLAlchemy 1.4+ requires "postgresql://".
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    SQLALCHEMY_URI = DATABASE_URL
+else:
+    SQLALCHEMY_URI = "sqlite:///" + os.path.join(BASE_DIR, "scholarship.db")
+
+# --- Uploads path ---
+# UPLOAD_DIR env var lets you point this at a Render persistent disk mount
+# (e.g. "/var/data/uploads") in production. Defaults to a local "uploads"
+# folder next to app.py for local development.
+UPLOAD_DIR = os.getenv("UPLOAD_DIR", os.path.join(BASE_DIR, "uploads"))
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_URI
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['UPLOAD_FOLDER'] = UPLOAD_DIR
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+app.secret_key = os.getenv("SECRET_KEY", "sih-scholarship-key-2024")
+
+# Make sure the uploads folder exists (fresh clones / fresh deploys won't have it)
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 db.init_app(app)
@@ -97,7 +120,10 @@ def process_application(req):
     for doc_type in doc_types:
         if doc_type in files and files[doc_type].filename:
             file = files[doc_type]
-            filepath = os.path.join('uploads', f"{data.get('aadhaar', 'unknown')}_{doc_type}_{file.filename}")
+            filepath = os.path.join(
+                app.config['UPLOAD_FOLDER'],
+                f"{data.get('aadhaar', 'unknown')}_{doc_type}_{file.filename}"
+            )
             file.save(filepath)
             text = extract_text_from_image(filepath)
             extracted_data[doc_type] = text
@@ -236,12 +262,13 @@ def api_applications():
     } for a in apps])
 
 
-'''@app.route('/api/deadlines')
+@app.route('/api/deadlines')
 def api_deadlines():
     return jsonify(get_active_scholarships())
+
+
 @app.route('/api/chat', methods=['POST'])
 def scholarbot_chat():
-
     data = request.json
     user_message = data.get('message', '')
 
@@ -265,7 +292,6 @@ def scholarbot_chat():
     recommendations = recommend_scholarships(student_profile)
 
     scholarship_context = ""
-
     for s in recommendations:
         scholarship_context += f"""
         Scholarship Name: {s.get('name')}
@@ -293,21 +319,20 @@ def scholarbot_chat():
     """
 
     try:
-
         response = ask_scholarbot(
             user_message,
             scholarship_context,
             student_context
         )
-
-        return jsonify({
-            "response": response
-        })
-
+        return jsonify({"response": response})
     except Exception as e:
-
+        # If GEMINI_API_KEY is missing/invalid on the deployed server, this
+        # surfaces a readable message in the chat UI instead of a 500 page.
         return jsonify({
-            "response": f"Error: {str(e)}"
-        }), 500'''
+            "response": "Sorry, the assistant is temporarily unavailable. "
+                         "(Server-side error contacting Gemini.)"
+        }), 500
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    port = int(os.getenv("PORT", 5000))
+    debug_mode = os.getenv("FLASK_DEBUG", "false").lower() == "true"
+    app.run(debug=debug_mode, host='0.0.0.0', port=port)
